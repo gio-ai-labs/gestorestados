@@ -1,28 +1,121 @@
-# Angular specific
-/dist/
-/out-tsc/
-/tmp/
-/coverage/
-/e2e/test-output/
-/.angular/
+#################################################
+# JAVA / SPRING BOOT
+#################################################
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+.gradle/
+build/
+
+# Logs
+logs/
+*.log
+
+# Spring Boot
+*.pid
+*.seed
+*.pid.lock
+
+# Archivos temporales
+*.tmp
+*.swp
+
+#################################################
+# IDEs
+#################################################
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+#################################################
+# Sistema Operativo
+#################################################
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+
+#################################################
+# JAVA
+#################################################
+
+*.class
+
+#################################################
+# NODE / ANGULAR
+#################################################
+
+# Dependencias
+node_modules/
+
+# Build Angular
+dist/
 .angular/
+.tmp/
 
-# Node modules and dependency files
-/node_modules/
-/package-lock.json
-/yarn.lock
-
-# Environment files
-/.env
-
-# Angular CLI and build artefacts
-/.angular-cli.json
-/.ng/
-
-# TypeScript cache
-*.tsbuildinfo
+# Caché
+.cache/
+.npm/
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+#################################################
+# TESTS
+#################################################
+
+coverage/
+
+#################################################
+# VARIABLES DE ENTORNO
+#################################################
+
+.env
+.env.local
+.env.*
+
+#################################################
+# ARCHIVOS GENERADOS
+#################################################
+
+*.bak
+*.orig
+
+#################################################
+# SONAR
+#################################################
+
+.sonar/
+
+#################################################
+# JACOCO
+#################################################
+
+jacoco.exec
+
+#################################################
+# ARCHIVOS DE CONFIGURACIÓN LOCAL
+#################################################
+
+application-local.yml
+application-local.properties
