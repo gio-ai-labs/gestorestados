@@ -22,6 +22,18 @@
   padding: 0.75rem;
 }
 
+/* Sección colapsada: sólo queda la card del workitem, así que la fila deja de
+   reservar las 3 columnas de estado y la card fluye a ancho completo. */
+.tablero-fila.tablero-fila--colapsada {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .tablero-fila.tablero-fila--colapsada {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* La cabecera de columnas comparte la grilla pero sin padding de fila. */
 .tablero-grid.sticky {
   padding-left: 0.75rem;
@@ -36,10 +48,20 @@
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
-/* Cada columna de estado se diferencia con un fondo muy sutil. */
+/* Cada columna de estado se diferencia con un fondo muy sutil.
+   Las cards fluyen en grilla: 1 por fila en móvil, 2 por fila en lg+ para
+   aprovechar el ancho de columna. El gutter (gap-2) lo aporta la utilidad
+   de Tailwind en el contenedor, igual en ambos ejes. */
 .tablero-col {
+  grid-template-columns: minmax(0, 1fr);
   background-color: rgb(255 255 255 / 0.5);
   transition: background-color 0.15s ease;
+}
+
+@media (min-width: 1024px) {
+  .tablero-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* El empty-state de workitem sin tareas ocupa todo el ancho de las 3 columnas. */
@@ -131,6 +153,62 @@
   .tablero-card-acciones,
   .tablero-nueva-tarea {
     opacity: 1;
+  }
+}
+
+/* --- Card clicable (abre edicion) ---
+   La card entera responde al clic. Una elevacion sutil y un anillo de marca al
+   pasar el cursor o enfocar comunican que es interactiva, reutilizando el morado
+   reservado a foco/activo del resto del tablero. */
+.tablero-clicable {
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.tablero-wi.tablero-clicable:hover {
+  border-color: var(--color-brand-300);
+  box-shadow:
+    0 8px 18px -10px rgb(30 27 52 / 0.18),
+    0 2px 6px -3px rgb(30 27 52 / 0.1);
+}
+
+.tablero-card.tablero-clicable:hover {
+  border-color: var(--color-brand-300);
+  box-shadow:
+    0 6px 14px -8px rgb(30 27 52 / 0.2),
+    0 2px 5px -3px rgb(30 27 52 / 0.12);
+}
+
+/* Foco accesible: el mismo halo morado del selector de sprint. */
+.tablero-clicable:focus-visible {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+/* --- Control de colapso de la seccion del workitem ---
+   Chevron que apunta a la derecha cuando esta colapsada y rota a apuntar abajo
+   al expandir, replicando el gesto del chevron del selector de sprint. */
+.tablero-colapso:focus-visible {
+  outline: none;
+  color: var(--color-brand-600, rgb(124 58 237));
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+.tablero-colapso-chevron {
+  transition: transform 0.18s ease;
+}
+
+.tablero-colapso-chevron--abierto {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tablero-clicable,
+  .tablero-colapso-chevron {
+    transition: none;
   }
 }
 

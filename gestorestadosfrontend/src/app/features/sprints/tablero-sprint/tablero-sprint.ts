@@ -134,6 +134,19 @@ export class TableroSprint {
 
   protected readonly hayWorkitems = computed(() => this.filas().length > 0);
 
+  /**
+   * Ids de los workitems cuya sección está colapsada (sólo en memoria).
+   * Se recalcula en cada `cargar`: COMPLETADO arranca colapsado;
+   * PENDIENTE / EN_PROCESO arrancan expandidos.
+   */
+  protected readonly colapsados = signal<ReadonlySet<number>>(new Set());
+
+  /**
+   * Marca puesta por CDK al iniciar un arrastre de tarea: evita que el `(click)`
+   * que sigue al soltar abra el modal de edición. Se limpia tras el ciclo de drag.
+   */
+  private arrastrando = false;
+
   // Modal CRUD de workitem
   protected readonly modalWorkitem = signal(false);
   protected readonly workitemEditando = signal<WorkItem | null>(null);
@@ -230,10 +243,22 @@ export class TableroSprint {
     this.cargando.set(true);
     try {
       const items = await this.obtenerTablero(sprintId);
-      this.filas.set(items.map((item) => this.aFila(item)));
+      // Lo más reciente primero: orden estable por id de workitem descendente.
+      const ordenados = [...items].sort((a, b) => b.workitem.id - a.workitem.id);
+      this.filas.set(ordenados.map((item) => this.aFila(item)));
+      // Estado inicial de colapso por estado del workitem: COMPLETADO cerrado,
+      // PENDIENTE / EN_PROCESO abierto. Se re-aplica en cada recarga del tablero.
+      this.colapsados.set(
+        new Set(
+          ordenados
+            .filter((item) => item.workitem.estado === 'COMPLETADO')
+            .map((item) => item.workitem.id),
+        ),
+      );
     } catch (err) {
       this.toast.error('No se pudo cargar el tablero del sprint. ' + mensajeDeError(err));
       this.filas.set([]);
+      this.colapsados.set(new Set());
     } finally {
       this.cargando.set(false);
     }
@@ -267,6 +292,49 @@ export class TableroSprint {
 
   protected totalTareas(fila: FilaWorkitem): number {
     return fila.tareas.PENDIENTE.length + fila.tareas.EN_PROCESO.length + fila.tareas.COMPLETADO.length;
+  }
+
+  /** ¿La sección de este workitem está colapsada? */
+  protected estaColapsado(workitemId: number): boolean {
+    return this.colapsados().has(workitemId);
+  }
+
+  /**
+   * Alterna el colapso de la sección de un workitem (sólo en memoria).
+   * El control hace stopPropagation, por lo que no abre la edición del workitem.
+   */
+  protected alternarColapso(workitemId: number, ev: Event): void {
+    ev.stopPropagation();
+    this.colapsados.update((actual) => {
+      const siguiente = new Set(actual);
+      if (siguiente.has(workitemId)) {
+        siguiente.delete(workitemId);
+      } else {
+        siguiente.add(workitemId);
+      }
+      return siguiente;
+    });
+  }
+
+  /**
+   * Clic sobre la card de la tarea: abre su edición salvo que el gesto haya sido
+   * un arrastre (en cuyo caso `arrastrando` está activo y se ignora el clic).
+   */
+  protected clicTarea(t: Tarea, ev: Event): void {
+    if (this.arrastrando) return;
+    this.abrirEditarTarea(t, ev);
+  }
+
+  /** CDK inicia un arrastre: marca para suprimir el `(click)` posterior. */
+  protected onArrastreIniciado(): void {
+    this.arrastrando = true;
+  }
+
+  /** CDK termina el arrastre: limpia la marca tras el ciclo de eventos. */
+  protected onArrastreTerminado(): void {
+    // El `(click)` sintético se dispara inmediatamente después del drop;
+    // se difiere la limpieza para que `clicTarea` lo vea aún activo.
+    setTimeout(() => (this.arrastrando = false));
   }
 
   /**
@@ -341,7 +409,8 @@ export class TableroSprint {
     this.modalWorkitem.set(true);
   }
 
-  protected abrirEditarWorkitem(w: SprintTableroItem['workitem']): void {
+  protected abrirEditarWorkitem(w: SprintTableroItem['workitem'], ev?: Event): void {
+    ev?.stopPropagation();
     this.workitemEditando.set(w);
     this.errorNombreWorkitem.set(null);
     this.formWorkitem.reset({
@@ -392,7 +461,8 @@ export class TableroSprint {
     }
   }
 
-  protected async eliminarWorkitem(w: SprintTableroItem['workitem']): Promise<void> {
+  protected async eliminarWorkitem(w: SprintTableroItem['workitem'], ev?: Event): Promise<void> {
+    ev?.stopPropagation();
     const ok = await this.confirmService.ask({
       titulo: '¿Eliminar workitem?',
       mensaje: `Se eliminará "${w.nombre}" junto con sus tareas. Esta acción no se puede deshacer.`,
@@ -411,7 +481,8 @@ export class TableroSprint {
 
   // --- CRUD de Tarea (reutiliza TareaService) ---
 
-  protected abrirNuevaTarea(workitemId: number): void {
+  protected abrirNuevaTarea(workitemId: number, ev?: Event): void {
+    ev?.stopPropagation();
     this.tareaEditando.set(null);
     this.tareaWorkitemId.set(workitemId);
     this.errorNombreTarea.set(null);
