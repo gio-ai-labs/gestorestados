@@ -78,18 +78,28 @@
       </div>
 
       @for (fila of filas(); track fila.workitem.id) {
-        <section class="tablero-fila tablero-grid rounded-2xl border border-slate-200/70 bg-slate-50/50">
-          <!-- Col 1: card del workitem -->
-          <article class="tablero-wi flex flex-col gap-3 rounded-xl bg-white p-4">
+        <section class="tablero-fila tablero-grid rounded-2xl border border-slate-200/70 bg-slate-50/50"
+          [class.tablero-fila--colapsada]="estaColapsado(fila.workitem.id)">
+          <!-- Col 1: card del workitem (clic abre su edición) -->
+          <article (click)="abrirEditarWorkitem(fila.workitem, $event)"
+            class="tablero-wi tablero-clicable flex cursor-pointer flex-col gap-3 rounded-xl bg-white p-4">
             <div class="flex items-start justify-between gap-2">
-              <ui-estado-chip [estado]="fila.workitem.estado" />
+              <div class="flex items-center gap-1.5">
+                <button type="button" (click)="alternarColapso(fila.workitem.id, $event)"
+                  [attr.aria-expanded]="!estaColapsado(fila.workitem.id)"
+                  [attr.aria-label]="estaColapsado(fila.workitem.id) ? 'Expandir tareas del workitem' : 'Colapsar tareas del workitem'"
+                  class="tablero-colapso grid size-6 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                  <svg viewBox="0 0 24 24" fill="none" class="tablero-colapso-chevron size-4" [class.tablero-colapso-chevron--abierto]="!estaColapsado(fila.workitem.id)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                </button>
+                <ui-estado-chip [estado]="fila.workitem.estado" />
+              </div>
               <div class="flex items-center gap-1">
                 <div class="tablero-wi-acciones flex items-center gap-0.5">
-                  <button type="button" (click)="abrirEditarWorkitem(fila.workitem)" aria-label="Editar workitem"
+                  <button type="button" (click)="abrirEditarWorkitem(fila.workitem, $event)" aria-label="Editar workitem"
                     class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                     <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                   </button>
-                  <button type="button" (click)="eliminarWorkitem(fila.workitem)" aria-label="Eliminar workitem"
+                  <button type="button" (click)="eliminarWorkitem(fila.workitem, $event)" aria-label="Eliminar workitem"
                     class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
                     <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
                   </button>
@@ -123,12 +133,20 @@
               </span>
             </div>
 
-            <button type="button" (click)="abrirNuevaTarea(fila.workitem.id)"
-              class="tablero-nueva-tarea inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 py-1.5 text-[12px] font-medium text-slate-400 transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-600">
-              <svg viewBox="0 0 24 24" fill="none" class="size-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
-              Nueva tarea
-            </button>
+            @if (estaColapsado(fila.workitem.id)) {
+              <span class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-50 py-1.5 text-[12px] font-medium text-slate-400">
+                {{ totalTareas(fila) }} {{ totalTareas(fila) === 1 ? 'tarea oculta' : 'tareas ocultas' }}
+              </span>
+            } @else {
+              <button type="button" (click)="abrirNuevaTarea(fila.workitem.id, $event)"
+                class="tablero-nueva-tarea inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 py-1.5 text-[12px] font-medium text-slate-400 transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-600">
+                <svg viewBox="0 0 24 24" fill="none" class="size-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                Nueva tarea
+              </button>
+            }
           </article>
+
+          @if (!estaColapsado(fila.workitem.id)) {
 
           <!-- Col 2-4: columnas de estado con tareas -->
           @for (col of columnas; track col.estado) {
@@ -146,11 +164,14 @@
                 [cdkDropListData]="fila.tareas[col.estado]"
                 [cdkDropListConnectedTo]="fila.listaIds"
                 (cdkDropListDropped)="soltar($event, fila, col.estado)"
-                class="tablero-col flex min-h-[96px] flex-1 flex-col gap-2 rounded-xl p-2">
+                class="tablero-col grid min-h-[96px] flex-1 content-start gap-2 rounded-xl p-2">
                 @for (t of fila.tareas[col.estado]; track t.id) {
                   <article
                     cdkDrag
-                    class="tablero-card cursor-grab rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm shadow-slate-200/40 active:cursor-grabbing">
+                    (cdkDragStarted)="onArrastreIniciado()"
+                    (cdkDragEnded)="onArrastreTerminado()"
+                    (click)="clicTarea(t, $event)"
+                    class="tablero-card tablero-clicable cursor-grab rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm shadow-slate-200/40 active:cursor-grabbing">
                     <div class="flex items-start justify-between gap-2">
                       <p class="text-[13px] font-semibold leading-snug text-ink-900">{{ t.nombre }}</p>
                       <div class="tablero-card-acciones flex shrink-0 items-center gap-0.5">
@@ -194,10 +215,11 @@
             </div>
           }
 
-          @if (totalTareas(fila) === 0) {
-            <p class="tablero-vacio px-3 pb-3 text-center text-[12px] italic text-slate-300">
-              Este workitem aún no tiene tareas. Crea una con “Nueva tarea” o arrástralas entre columnas.
-            </p>
+            @if (totalTareas(fila) === 0) {
+              <p class="tablero-vacio px-3 pb-3 text-center text-[12px] italic text-slate-300">
+                Este workitem aún no tiene tareas. Crea una con “Nueva tarea” o arrástralas entre columnas.
+              </p>
+            }
           }
         </section>
       }
