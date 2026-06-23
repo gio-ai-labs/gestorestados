@@ -1,0 +1,157 @@
+<!-- Cabecera: selector de proyecto (contexto) a la izquierda, acción a la derecha -->
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+  <!-- Selector de proyecto: dropdown propio (trigger + panel flotante), accesible por teclado -->
+  <div class="proyecto-selector">
+    <span class="proyecto-selector__eyebrow">Proyecto</span>
+    <div class="proyecto-selector__wrap">
+      <button
+        type="button"
+        class="proyecto-selector__control"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="selectorAbierto()"
+        [disabled]="proyectoService.proyectos().length === 0"
+        (click)="alternarSelector()">
+        <svg viewBox="0 0 24 24" fill="none" class="proyecto-selector__icono" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>
+        @if (proyectoActivo(); as activo) {
+          <span class="proyecto-selector__valor">{{ activo.nombre }}</span>
+        } @else {
+          <span class="proyecto-selector__valor proyecto-selector__valor--vacio">Sin proyectos</span>
+        }
+        <svg viewBox="0 0 24 24" fill="none" class="proyecto-selector__chevron" [class.proyecto-selector__chevron--abierto]="selectorAbierto()" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+
+      @if (selectorAbierto()) {
+        <button type="button" class="proyecto-selector__backdrop" tabindex="-1" aria-label="Cerrar selector" (click)="cerrarSelector()"></button>
+        <ul class="proyecto-selector__panel" role="listbox" aria-label="Proyectos disponibles">
+          @for (p of proyectoService.proyectos(); track p.id) {
+            <li role="option" [attr.aria-selected]="p.id === proyectoSeleccionadoId()">
+              <button
+                type="button"
+                class="proyecto-selector__opcion"
+                [class.proyecto-selector__opcion--activa]="p.id === proyectoSeleccionadoId()"
+                (click)="seleccionarProyecto(p.id)">
+                <span class="proyecto-selector__opcion-nombre">{{ p.nombre }}</span>
+                @if (p.id === proyectoSeleccionadoId()) {
+                  <svg viewBox="0 0 24 24" fill="none" class="proyecto-selector__check" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 6-11 11-5-5" /></svg>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    @if (proyectoActivo()) {
+      <span class="proyecto-selector__conteo">
+        {{ service.sprints().length }}
+        {{ service.sprints().length === 1 ? 'sprint' : 'sprints' }}
+      </span>
+    }
+  </div>
+
+  @if (proyectoActivo()) {
+    <button uiButton variant="primary" size="sm" (click)="abrirNuevo()">
+      <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+      Nuevo sprint
+    </button>
+  }
+</div>
+
+<div class="p-5">
+  @if (proyectoService.proyectos().length === 0 && !proyectoService.cargando()) {
+    <ui-empty-state
+      titulo="Aún no hay proyectos"
+      mensaje="Crea un proyecto desde la vista de Proyectos para empezar a planificar sprints." />
+  } @else if (service.cargando() || proyectoService.cargando()) {
+    <ui-spinner />
+  } @else if (service.sprints().length === 0) {
+    <ui-empty-state titulo="Aún no hay sprints" mensaje="Crea el primer sprint de este proyecto.">
+      <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevo()">
+        <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        Nuevo sprint
+      </button>
+    </ui-empty-state>
+  } @else {
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (s of service.sprints(); track s.id) {
+        <div
+          (click)="abrir(s)"
+          class="group flex cursor-pointer flex-col rounded-xl border border-slate-200/80 bg-white p-5 transition hover:border-brand-300 hover:shadow-md hover:shadow-slate-200/60">
+          <div class="flex items-start justify-between gap-3">
+            <ui-estado-chip [estado]="s.estado" />
+            <div class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+              <button type="button" (click)="abrirEditar(s, $event)" aria-label="Editar"
+                class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+              </button>
+              <button type="button" (click)="eliminar(s, $event)" aria-label="Eliminar"
+                class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
+                <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <h3 class="mt-4 font-display text-[16px] font-bold text-ink-900">{{ s.nombre }}</h3>
+          @if (s.descripcion) {
+            <p class="mt-1 line-clamp-2 text-[13px] leading-relaxed text-slate-500">{{ s.descripcion }}</p>
+          }
+
+          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-slate-500">
+            @if (s.fechaInicio || s.fechaFin) {
+              <span class="inline-flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" class="size-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                {{ s.fechaInicio ? (s.fechaInicio | date: 'd MMM') : '—' }} → {{ s.fechaFin ? (s.fechaFin | date: 'd MMM') : '—' }}
+              </span>
+            }
+            <span class="inline-flex items-center gap-1.5 font-mono text-slate-600">
+              <svg viewBox="0 0 24 24" fill="none" class="size-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+              {{ s.horas }} h
+            </span>
+          </div>
+
+          <div class="mt-4 flex items-center gap-1.5 text-[13px] font-medium text-brand-600">
+            Abrir tablero
+            <svg viewBox="0 0 24 24" fill="none" class="size-4 transition group-hover:translate-x-0.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal crear/editar -->
+<ui-modal [(open)]="modalAbierto" [titulo]="editando() ? 'Editar sprint' : 'Nuevo sprint'">
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="space-y-4">
+    <ui-form-field label="Nombre" [requerido]="true"
+      [error]="errorNombre() ?? ((form.controls.nombre.touched && form.controls.nombre.invalid) ? 'El nombre es obligatorio' : null)">
+      <input class="ui-input" formControlName="nombre" placeholder="Nombre del sprint" autocomplete="off" />
+    </ui-form-field>
+
+    <ui-form-field label="Descripción" ayuda="Opcional">
+      <textarea class="ui-input" formControlName="descripcion" rows="2" placeholder="Objetivo del sprint"></textarea>
+    </ui-form-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <ui-form-field label="Fecha inicio">
+        <input class="ui-input" type="date" formControlName="fechaInicio" />
+      </ui-form-field>
+      <ui-form-field label="Fecha fin"
+        [error]="(form.hasError('rangoFechas') && form.controls.fechaFin.touched) ? 'No puede ser anterior a la fecha inicio' : null">
+        <input class="ui-input" type="date" formControlName="fechaFin" />
+      </ui-form-field>
+    </div>
+
+    <ui-form-field label="Estado">
+      <select class="ui-input" formControlName="estado">
+        @for (e of estados; track e) {
+          <option [value]="e">{{ estadoLabel[e] }}</option>
+        }
+      </select>
+    </ui-form-field>
+  </form>
+
+  <button modal-footer uiButton variant="secondary" size="sm" type="button" (click)="modalAbierto.set(false)">Cancelar</button>
+  <button modal-footer uiButton variant="primary" size="sm" type="button" [disabled]="guardando()" (click)="guardar()">
+    {{ guardando() ? 'Guardando…' : (editando() ? 'Guardar cambios' : 'Crear sprint') }}
+  </button>
+</ui-modal>

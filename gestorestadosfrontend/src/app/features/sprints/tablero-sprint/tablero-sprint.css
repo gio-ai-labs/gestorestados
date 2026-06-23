@@ -1,0 +1,331 @@
+:host {
+  display: block;
+}
+
+/* Grilla de 4 columnas: workitem + 3 estados. Se apila en pantallas pequenas. */
+.tablero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .tablero-grid {
+    grid-template-columns: 280px repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+  }
+}
+
+/* Fila de workitem: padding interno para separar el carril de las columnas. */
+.tablero-fila {
+  padding: 0.75rem;
+}
+
+/* La cabecera de columnas comparte la grilla pero sin padding de fila. */
+.tablero-grid.sticky {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  background-color: rgb(248 250 252 / 0.85);
+  backdrop-filter: blur(4px);
+}
+
+/* Carril izquierdo del workitem: banda de color como ancla visual de la fila. */
+.tablero-wi {
+  border: 1px solid rgb(226 232 240 / 0.8);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+/* Cada columna de estado se diferencia con un fondo muy sutil. */
+.tablero-col {
+  background-color: rgb(255 255 255 / 0.5);
+  transition: background-color 0.15s ease;
+}
+
+/* El empty-state de workitem sin tareas ocupa todo el ancho de las 3 columnas. */
+.tablero-vacio {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .tablero-vacio {
+    grid-column: 2 / -1;
+  }
+}
+
+/* --- Drag & drop (replica el patron del tablero de tareas) --- */
+
+/* Tarjeta mientras se arrastra. */
+.tablero-card.cdk-drag-preview {
+  box-shadow:
+    0 12px 24px -8px rgb(30 27 52 / 0.25),
+    0 4px 8px -4px rgb(30 27 52 / 0.15);
+  cursor: grabbing;
+}
+
+/* Hueco que deja la tarjeta arrastrada. */
+.cdk-drag-placeholder {
+  opacity: 0.45;
+}
+.cdk-drag-placeholder > * {
+  visibility: hidden;
+}
+
+/* Animacion de reacomodo del resto de tarjetas. */
+.tablero-card.cdk-drag-animating {
+  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+.tablero-col.cdk-drop-list-dragging .tablero-card:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Resalte de la columna destino. */
+.tablero-col.cdk-drop-list-receiving,
+.tablero-col.cdk-drop-list-dragging {
+  background-color: rgb(255 255 255 / 0.9);
+  outline: 2px dashed var(--color-brand-300);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tablero-card.cdk-drag-animating,
+  .tablero-col.cdk-drop-list-dragging .tablero-card:not(.cdk-drag-placeholder),
+  .tablero-col {
+    transition: none;
+  }
+}
+
+/* --- Affordances de accion (editar / eliminar / historial / nueva tarea) --- */
+
+/* Acciones de la card de workitem y de cada card de tarea:
+   ocultas en reposo, se revelan al pasar el cursor o al enfocar con teclado
+   (replica el patron opacity-0/group-hover de workitems-list y del tablero de tareas). */
+.tablero-wi-acciones,
+.tablero-card-acciones {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tablero-wi:hover .tablero-wi-acciones,
+.tablero-wi:focus-within .tablero-wi-acciones,
+.tablero-card:hover .tablero-card-acciones,
+.tablero-card:focus-within .tablero-card-acciones {
+  opacity: 1;
+}
+
+/* El disparador de nueva tarea queda discreto y solo se realza al interactuar. */
+.tablero-nueva-tarea {
+  opacity: 0.7;
+}
+
+.tablero-wi:hover .tablero-nueva-tarea,
+.tablero-wi:focus-within .tablero-nueva-tarea,
+.tablero-nueva-tarea:hover,
+.tablero-nueva-tarea:focus-visible {
+  opacity: 1;
+}
+
+/* En dispositivos tactiles (sin hover real) las acciones permanecen visibles. */
+@media (hover: none) {
+  .tablero-wi-acciones,
+  .tablero-card-acciones,
+  .tablero-nueva-tarea {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tablero-wi-acciones,
+  .tablero-card-acciones {
+    transition: none;
+  }
+}
+
+/* --- Selector de sprint (cabecera) ---
+   Dropdown propio: un trigger (botón) con el punto de estado del sprint activo,
+   su nombre y un chevron; al abrir despliega un panel flotante con las opciones,
+   cada una con su punto de estado, hover y marca de activo. El morado de marca se
+   reserva para foco y opción activa, atando el selector al lenguaje del tablero. */
+.sprint-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.sprint-selector__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+.sprint-selector__wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.sprint-selector__control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+  border: 1px solid rgb(226 232 240); /* slate-200 */
+  border-radius: 0.625rem;
+  background-color: #ffffff;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  max-width: 16rem;
+}
+
+.sprint-selector__control:hover {
+  border-color: var(--color-brand-300);
+}
+
+.sprint-selector__control:focus-visible {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+.sprint-selector__dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+}
+
+.sprint-selector__valor {
+  flex: 1;
+  min-width: 0;
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-900, rgb(17 24 39));
+}
+
+.sprint-selector__chevron {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: rgb(148 163 184); /* slate-400 */
+  transition: transform 0.18s ease;
+}
+
+.sprint-selector__chevron--abierto {
+  transform: rotate(180deg);
+}
+
+/* Capa transparente que cierra el panel al hacer clic fuera. */
+.sprint-selector__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+/* Panel flotante de opciones: elevado del fondo con borde y sombra en capas. */
+.sprint-selector__panel {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  z-index: 50;
+  min-width: 100%;
+  max-width: 18rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.3125rem;
+  list-style: none;
+  background-color: #ffffff;
+  border: 1px solid rgb(226 232 240); /* slate-200 */
+  border-radius: 0.75rem;
+  box-shadow:
+    0 12px 28px -10px rgb(30 27 52 / 0.22),
+    0 6px 12px -8px rgb(30 27 52 / 0.14);
+  transform-origin: top left;
+  animation: sprint-selector-pop 0.14s ease-out;
+}
+
+@keyframes sprint-selector-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sprint-selector__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-900, rgb(17 24 39));
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.sprint-selector__opcion:hover,
+.sprint-selector__opcion:focus-visible {
+  outline: none;
+  background-color: rgb(241 245 249); /* slate-100 */
+}
+
+.sprint-selector__opcion--activa {
+  font-weight: 600;
+  color: var(--color-brand-700, rgb(109 40 217));
+  background-color: rgb(124 58 237 / 0.08);
+}
+
+.sprint-selector__opcion--activa:hover {
+  background-color: rgb(124 58 237 / 0.12);
+}
+
+.sprint-selector__opcion-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sprint-selector__check {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-brand-600, rgb(124 58 237));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprint-selector__control,
+  .sprint-selector__chevron,
+  .sprint-selector__opcion {
+    transition: none;
+  }
+  .sprint-selector__panel {
+    animation: none;
+  }
+}
