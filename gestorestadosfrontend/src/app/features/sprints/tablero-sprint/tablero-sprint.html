@@ -1,0 +1,317 @@
+<!-- Cabecera: selector de sprint (contexto) a la izquierda, acción a la derecha -->
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+  <!-- Selector de sprint: dropdown propio (trigger + panel flotante), accesible por teclado -->
+  <div class="sprint-selector">
+    <span class="sprint-selector__eyebrow">Sprint</span>
+    <div class="sprint-selector__wrap">
+      <button
+        type="button"
+        class="sprint-selector__control"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="selectorAbierto()"
+        (click)="alternarSelector()">
+        @if (sprintActivo(); as activo) {
+          <span class="sprint-selector__dot" [class]="dotClase(activo.estado)" aria-hidden="true"></span>
+          <span class="sprint-selector__valor">{{ activo.nombre }}</span>
+        } @else {
+          <span class="sprint-selector__valor">Selecciona un sprint</span>
+        }
+        <svg viewBox="0 0 24 24" fill="none" class="sprint-selector__chevron" [class.sprint-selector__chevron--abierto]="selectorAbierto()" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+
+      @if (selectorAbierto()) {
+        <button type="button" class="sprint-selector__backdrop" tabindex="-1" aria-label="Cerrar selector" (click)="cerrarSelector()"></button>
+        <ul class="sprint-selector__panel" role="listbox" aria-label="Sprints del proyecto">
+          @for (s of sprintsProyecto(); track s.id) {
+            <li role="option" [attr.aria-selected]="s.id === sprintId()">
+              <button
+                type="button"
+                class="sprint-selector__opcion"
+                [class.sprint-selector__opcion--activa]="s.id === sprintId()"
+                (click)="seleccionarSprint(s.id)">
+                <span class="sprint-selector__dot" [class]="dotClase(s.estado)" aria-hidden="true"></span>
+                <span class="sprint-selector__opcion-nombre">{{ s.nombre }}</span>
+                @if (s.id === sprintId()) {
+                  <svg viewBox="0 0 24 24" fill="none" class="sprint-selector__check" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 6-11 11-5-5" /></svg>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+
+  <button uiButton variant="primary" size="sm" (click)="abrirNuevoWorkitem()">
+    <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+    Nuevo workitem
+  </button>
+</div>
+
+<div class="p-5">
+  @if (cargando()) {
+    <ui-spinner [alto]="360" />
+  } @else if (!hayWorkitems()) {
+    <ui-empty-state
+      titulo="Este sprint no tiene workitems"
+      mensaje="Agrega workitems al sprint para empezar a planificar el trabajo en el tablero.">
+      <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevoWorkitem()">
+        <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        Nuevo workitem
+      </button>
+    </ui-empty-state>
+  } @else {
+    <div class="flex flex-col gap-4">
+      <!-- Cabecera de columnas de estado (alineada con la grilla de filas) -->
+      <div class="tablero-grid sticky top-0 z-10 hidden lg:grid">
+        <div class="px-1 py-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+          Workitem
+        </div>
+        @for (col of columnas; track col.estado) {
+          <div class="flex items-center gap-2 px-1 py-2">
+            <span
+              class="size-2 rounded-full"
+              [class]="col.estado === 'EN_PROCESO' ? 'bg-brand-500' : col.estado === 'COMPLETADO' ? 'bg-teal-500' : 'bg-slate-400'"></span>
+            <span class="text-[12px] font-semibold uppercase tracking-wide text-slate-500">{{ col.titulo }}</span>
+          </div>
+        }
+      </div>
+
+      @for (fila of filas(); track fila.workitem.id) {
+        <section class="tablero-fila tablero-grid rounded-2xl border border-slate-200/70 bg-slate-50/50">
+          <!-- Col 1: card del workitem -->
+          <article class="tablero-wi flex flex-col gap-3 rounded-xl bg-white p-4">
+            <div class="flex items-start justify-between gap-2">
+              <ui-estado-chip [estado]="fila.workitem.estado" />
+              <div class="flex items-center gap-1">
+                <div class="tablero-wi-acciones flex items-center gap-0.5">
+                  <button type="button" (click)="abrirEditarWorkitem(fila.workitem)" aria-label="Editar workitem"
+                    class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                    <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                  </button>
+                  <button type="button" (click)="eliminarWorkitem(fila.workitem)" aria-label="Eliminar workitem"
+                    class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
+                    <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
+                  </button>
+                </div>
+                <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500">
+                  WI-{{ fila.workitem.id }}
+                </span>
+              </div>
+            </div>
+
+            <h3 class="font-display text-[15px] font-bold leading-snug text-ink-900">{{ fila.workitem.nombre }}</h3>
+
+            @if (fila.workitem.descripcion) {
+              <p class="line-clamp-2 text-[12px] leading-relaxed text-slate-500">{{ fila.workitem.descripcion }}</p>
+            }
+
+            <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+              @if (fila.workitem.usuarioNombre) {
+                <span class="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+                  <span class="grid size-5 place-items-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700">
+                    {{ fila.workitem.usuarioNombre.charAt(0).toUpperCase() }}
+                  </span>
+                  {{ fila.workitem.usuarioNombre }}
+                </span>
+              } @else {
+                <span class="text-[12px] italic text-slate-300">Sin asignar</span>
+              }
+              <span class="inline-flex items-center gap-1 font-mono text-[12px] text-slate-500">
+                <svg viewBox="0 0 24 24" fill="none" class="size-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                {{ fila.workitem.horas }} h
+              </span>
+            </div>
+
+            <button type="button" (click)="abrirNuevaTarea(fila.workitem.id)"
+              class="tablero-nueva-tarea inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 py-1.5 text-[12px] font-medium text-slate-400 transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-600">
+              <svg viewBox="0 0 24 24" fill="none" class="size-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              Nueva tarea
+            </button>
+          </article>
+
+          <!-- Col 2-4: columnas de estado con tareas -->
+          @for (col of columnas; track col.estado) {
+            <div class="tablero-estado flex flex-col">
+              <div class="flex items-center gap-2 px-1 pb-2 lg:hidden">
+                <span
+                  class="size-2 rounded-full"
+                  [class]="col.estado === 'EN_PROCESO' ? 'bg-brand-500' : col.estado === 'COMPLETADO' ? 'bg-teal-500' : 'bg-slate-400'"></span>
+                <span class="text-[12px] font-semibold uppercase tracking-wide text-slate-500">{{ col.titulo }}</span>
+              </div>
+
+              <div
+                cdkDropList
+                [id]="listaId(fila.workitem.id, col.estado)"
+                [cdkDropListData]="fila.tareas[col.estado]"
+                [cdkDropListConnectedTo]="fila.listaIds"
+                (cdkDropListDropped)="soltar($event, fila, col.estado)"
+                class="tablero-col flex min-h-[96px] flex-1 flex-col gap-2 rounded-xl p-2">
+                @for (t of fila.tareas[col.estado]; track t.id) {
+                  <article
+                    cdkDrag
+                    class="tablero-card cursor-grab rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm shadow-slate-200/40 active:cursor-grabbing">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="text-[13px] font-semibold leading-snug text-ink-900">{{ t.nombre }}</p>
+                      <div class="tablero-card-acciones flex shrink-0 items-center gap-0.5">
+                        <button type="button" (click)="verHistorial(t, $event)" aria-label="Historial"
+                          class="grid size-7 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                          <svg viewBox="0 0 24 24" fill="none" class="size-[15px]" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7v5l3 2" /></svg>
+                        </button>
+                        <button type="button" (click)="abrirEditarTarea(t, $event)" aria-label="Editar tarea"
+                          class="grid size-7 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                          <svg viewBox="0 0 24 24" fill="none" class="size-[15px]" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                        </button>
+                        <button type="button" (click)="eliminarTarea(t, $event)" aria-label="Eliminar tarea"
+                          class="grid size-7 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
+                          <svg viewBox="0 0 24 24" fill="none" class="size-[15px]" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="mt-2 flex items-center justify-between gap-2">
+                      @if (t.usuarioNombre) {
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
+                          <span class="grid size-4 place-items-center rounded-full bg-brand-100 text-[9px] font-bold text-brand-700">
+                            {{ t.usuarioNombre.charAt(0).toUpperCase() }}
+                          </span>
+                          {{ t.usuarioNombre }}
+                        </span>
+                      } @else {
+                        <span class="text-[11px] italic text-slate-300">Sin asignar</span>
+                      }
+                      <span class="inline-flex items-center gap-2">
+                        <span class="font-mono text-[11px] text-slate-400">#{{ t.id }}</span>
+                        <span class="inline-flex items-center gap-1 font-mono text-[11px] text-slate-500">
+                          <svg viewBox="0 0 24 24" fill="none" class="size-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                          {{ t.horas }} h
+                        </span>
+                      </span>
+                    </div>
+                  </article>
+                }
+              </div>
+            </div>
+          }
+
+          @if (totalTareas(fila) === 0) {
+            <p class="tablero-vacio px-3 pb-3 text-center text-[12px] italic text-slate-300">
+              Este workitem aún no tiene tareas. Crea una con “Nueva tarea” o arrástralas entre columnas.
+            </p>
+          }
+        </section>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal crear/editar workitem -->
+<ui-modal [(open)]="modalWorkitem" [titulo]="workitemEditando() ? 'Editar workitem' : 'Nuevo workitem'">
+  <form [formGroup]="formWorkitem" (ngSubmit)="guardarWorkitem()" class="space-y-4">
+    <ui-form-field label="Nombre" [requerido]="true"
+      [error]="errorNombreWorkitem() ?? ((formWorkitem.controls.nombre.touched && formWorkitem.controls.nombre.invalid) ? 'El nombre es obligatorio' : null)">
+      <input class="ui-input" formControlName="nombre" placeholder="Nombre del requerimiento" autocomplete="off" />
+    </ui-form-field>
+
+    <ui-form-field label="Descripción" ayuda="Opcional">
+      <textarea class="ui-input" formControlName="descripcion" rows="2" placeholder="Descripción"></textarea>
+    </ui-form-field>
+
+    <ui-form-field label="Criterios de aceptación" ayuda="Opcional">
+      <textarea class="ui-input" formControlName="criteriosAceptacion" rows="2" placeholder="Criterios de aceptación"></textarea>
+    </ui-form-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <ui-form-field label="Usuario asignado">
+        <select class="ui-input" formControlName="usuarioId">
+          <option [ngValue]="null">Sin asignar</option>
+          @for (u of usuariosActivos(); track u.id) {
+            <option [ngValue]="u.id">{{ u.nombre }}</option>
+          }
+        </select>
+      </ui-form-field>
+
+      <ui-form-field label="Estado">
+        <select class="ui-input" formControlName="estado">
+          @for (e of estados; track e) {
+            <option [value]="e">{{ estadoLabel[e] }}</option>
+          }
+        </select>
+      </ui-form-field>
+    </div>
+  </form>
+
+  <button modal-footer uiButton variant="secondary" size="sm" type="button" (click)="modalWorkitem.set(false)">Cancelar</button>
+  <button modal-footer uiButton variant="primary" size="sm" type="button" [disabled]="guardandoWorkitem()" (click)="guardarWorkitem()">
+    {{ guardandoWorkitem() ? 'Guardando…' : (workitemEditando() ? 'Guardar cambios' : 'Crear workitem') }}
+  </button>
+</ui-modal>
+
+<!-- Modal crear/editar tarea -->
+<ui-modal [(open)]="modalTarea" [titulo]="tareaEditando() ? 'Editar tarea' : 'Nueva tarea'">
+  <form [formGroup]="formTarea" (ngSubmit)="guardarTarea()" class="space-y-4">
+    <ui-form-field label="Nombre" [requerido]="true"
+      [error]="errorNombreTarea() ?? ((formTarea.controls.nombre.touched && formTarea.controls.nombre.invalid) ? 'El nombre es obligatorio' : null)">
+      <input class="ui-input" formControlName="nombre" placeholder="Nombre de la tarea" autocomplete="off" />
+    </ui-form-field>
+
+    <ui-form-field label="Descripción" ayuda="Opcional">
+      <textarea class="ui-input" formControlName="descripcion" rows="2" placeholder="Descripción"></textarea>
+    </ui-form-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <ui-form-field label="Horas" ayuda="Esfuerzo estimado">
+        <input class="ui-input" type="number" min="0" step="0.5" formControlName="horas" />
+      </ui-form-field>
+      <ui-form-field label="Estado">
+        <select class="ui-input" formControlName="estado">
+          @for (e of estados; track e) {
+            <option [value]="e">{{ estadoLabel[e] }}</option>
+          }
+        </select>
+      </ui-form-field>
+    </div>
+
+    <ui-form-field label="Usuario asignado">
+      <select class="ui-input" formControlName="usuarioId">
+        <option [ngValue]="null">Sin asignar</option>
+        @for (u of usuariosActivos(); track u.id) {
+          <option [ngValue]="u.id">{{ u.nombre }}</option>
+        }
+      </select>
+    </ui-form-field>
+  </form>
+
+  <button modal-footer uiButton variant="secondary" size="sm" type="button" (click)="modalTarea.set(false)">Cancelar</button>
+  <button modal-footer uiButton variant="primary" size="sm" type="button" [disabled]="guardandoTarea()" (click)="guardarTarea()">
+    {{ guardandoTarea() ? 'Guardando…' : (tareaEditando() ? 'Guardar cambios' : 'Crear tarea') }}
+  </button>
+</ui-modal>
+
+<!-- Modal historial -->
+<ui-modal [(open)]="historialAbierto" titulo="Historial de estados"
+  [subtitulo]="historialTarea()?.nombre ?? ''">
+  @if (historial().length === 0) {
+    <p class="py-6 text-center text-[13px] text-slate-400">Sin cambios registrados.</p>
+  } @else {
+    <ol class="relative space-y-4 pl-4">
+      @for (h of historial(); track h.id) {
+        <li class="relative">
+          <span class="absolute -left-4 top-1 size-2 rounded-full bg-brand-500"></span>
+          <div class="flex items-center gap-2 text-[13px]">
+            @if (h.estadoAnterior) {
+              <span class="font-medium text-slate-400">{{ estadoLabel[h.estadoAnterior] }}</span>
+              <svg viewBox="0 0 24 24" fill="none" class="size-3.5 text-slate-300" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            } @else {
+              <span class="font-medium text-slate-400">Creación</span>
+              <svg viewBox="0 0 24 24" fill="none" class="size-3.5 text-slate-300" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            }
+            <span class="font-semibold text-ink-900">{{ estadoLabel[h.estadoNuevo] }}</span>
+          </div>
+          <p class="mt-0.5 font-mono text-[11px] text-slate-400">{{ h.fechaCambio }}</p>
+        </li>
+      }
+    </ol>
+  }
+  <button modal-footer uiButton variant="secondary" size="sm" type="button" (click)="historialAbierto.set(false)">Cerrar</button>
+</ui-modal>

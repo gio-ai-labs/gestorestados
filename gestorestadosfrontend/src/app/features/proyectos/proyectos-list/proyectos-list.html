@@ -1,0 +1,79 @@
+<!-- Header de la card: contador + accion -->
+<div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+  <p class="text-[13px] font-medium text-slate-500">
+    {{ service.proyectos().length }}
+    {{ service.proyectos().length === 1 ? 'proyecto' : 'proyectos' }}
+  </p>
+  <button uiButton variant="primary" size="sm" (click)="abrirNuevo()">
+    <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+    Nuevo proyecto
+  </button>
+</div>
+
+<div class="p-5">
+  @if (service.cargando()) {
+    <ui-spinner />
+  } @else if (service.proyectos().length === 0) {
+    <ui-empty-state titulo="Aún no hay proyectos" mensaje="Crea tu primer proyecto para empezar a organizar el trabajo.">
+      <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevo()">
+        <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        Nuevo proyecto
+      </button>
+    </ui-empty-state>
+  } @else {
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (p of service.proyectos(); track p.id) {
+        <div
+          (click)="abrir(p)"
+          class="group flex cursor-pointer flex-col rounded-xl border border-slate-200/80 bg-white p-5 transition hover:border-brand-300 hover:shadow-md hover:shadow-slate-200/60">
+          <div class="flex items-start justify-between gap-3">
+            <div class="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-600">
+              <svg viewBox="0 0 24 24" fill="none" class="size-[18px]" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
+            </div>
+            <div class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+              <button type="button" (click)="abrirEditar(p, $event)" aria-label="Editar"
+                class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+              </button>
+              <button type="button" (click)="eliminar(p, $event)" aria-label="Eliminar"
+                class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
+                <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <h3 class="mt-4 font-display text-[16px] font-bold text-ink-900">{{ p.nombre }}</h3>
+          @if (p.descripcion) {
+            <p class="mt-1 line-clamp-2 text-[13px] leading-relaxed text-slate-500">{{ p.descripcion }}</p>
+          } @else {
+            <p class="mt-1 text-[13px] italic text-slate-300">Sin descripción</p>
+          }
+
+          <div class="mt-4 flex items-center gap-1.5 text-[13px] font-medium text-brand-600">
+            Ver sprints
+            <svg viewBox="0 0 24 24" fill="none" class="size-4 transition group-hover:translate-x-0.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal crear/editar -->
+<ui-modal [(open)]="modalAbierto" [titulo]="editando() ? 'Editar proyecto' : 'Nuevo proyecto'">
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="space-y-4">
+    <ui-form-field label="Nombre" [requerido]="true"
+      [error]="errorNombre() ?? ((form.controls.nombre.touched && form.controls.nombre.invalid) ? 'El nombre es obligatorio' : null)">
+      <input class="ui-input" formControlName="nombre" placeholder="Nombre del proyecto" autocomplete="off" />
+    </ui-form-field>
+
+    <ui-form-field label="Descripción" ayuda="Opcional">
+      <textarea class="ui-input" formControlName="descripcion" rows="3" placeholder="Breve descripción del proyecto"></textarea>
+    </ui-form-field>
+  </form>
+
+  <button modal-footer uiButton variant="secondary" size="sm" type="button" (click)="modalAbierto.set(false)">Cancelar</button>
+  <button modal-footer uiButton variant="primary" size="sm" type="button" [disabled]="guardando()" (click)="guardar()">
+    {{ guardando() ? 'Guardando…' : (editando() ? 'Guardar cambios' : 'Crear proyecto') }}
+  </button>
+</ui-modal>
