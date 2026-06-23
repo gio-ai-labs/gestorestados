@@ -1,0 +1,210 @@
+:host {
+  display: block;
+}
+
+/* --- Selector de proyecto (cabecera) ---
+   Dropdown propio en la misma familia visual que el selector de sprint del tablero:
+   un trigger (botón) con icono de proyecto, el nombre del proyecto activo y un
+   chevron; al abrir despliega un panel flotante con las opciones, cada una con
+   hover y marca de activo. El morado de marca se reserva para foco y opción
+   activa, atando la lista de sprints al lenguaje del tablero. */
+.proyecto-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.proyecto-selector__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+.proyecto-selector__wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.proyecto-selector__control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem 0.375rem 0.625rem;
+  border: 1px solid rgb(226 232 240); /* slate-200 */
+  border-radius: 0.625rem;
+  background-color: #ffffff;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  max-width: 16rem;
+}
+
+.proyecto-selector__control:hover:not(:disabled) {
+  border-color: var(--color-brand-300);
+}
+
+.proyecto-selector__control:focus-visible {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+.proyecto-selector__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.proyecto-selector__icono {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+.proyecto-selector__valor {
+  flex: 1;
+  min-width: 0;
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-900, rgb(17 24 39));
+}
+
+.proyecto-selector__valor--vacio {
+  font-weight: 500;
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+.proyecto-selector__chevron {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: rgb(148 163 184); /* slate-400 */
+  transition: transform 0.18s ease;
+}
+
+.proyecto-selector__chevron--abierto {
+  transform: rotate(180deg);
+}
+
+/* Conteo de sprints del proyecto activo, contiguo al selector. */
+.proyecto-selector__conteo {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(100 116 139); /* slate-500 */
+}
+
+/* Capa transparente que cierra el panel al hacer clic fuera. */
+.proyecto-selector__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+/* Panel flotante de opciones: elevado del fondo con borde y sombra en capas. */
+.proyecto-selector__panel {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  z-index: 50;
+  min-width: 100%;
+  max-width: 18rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.3125rem;
+  list-style: none;
+  background-color: #ffffff;
+  border: 1px solid rgb(226 232 240); /* slate-200 */
+  border-radius: 0.75rem;
+  box-shadow:
+    0 12px 28px -10px rgb(30 27 52 / 0.22),
+    0 6px 12px -8px rgb(30 27 52 / 0.14);
+  transform-origin: top left;
+  animation: proyecto-selector-pop 0.14s ease-out;
+}
+
+@keyframes proyecto-selector-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.proyecto-selector__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-900, rgb(17 24 39));
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.proyecto-selector__opcion:hover,
+.proyecto-selector__opcion:focus-visible {
+  outline: none;
+  background-color: rgb(241 245 249); /* slate-100 */
+}
+
+.proyecto-selector__opcion--activa {
+  font-weight: 600;
+  color: var(--color-brand-700, rgb(109 40 217));
+  background-color: rgb(124 58 237 / 0.08);
+}
+
+.proyecto-selector__opcion--activa:hover {
+  background-color: rgb(124 58 237 / 0.12);
+}
+
+.proyecto-selector__opcion-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proyecto-selector__check {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-brand-600, rgb(124 58 237));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proyecto-selector__control,
+  .proyecto-selector__chevron,
+  .proyecto-selector__opcion {
+    transition: none;
+  }
+  .proyecto-selector__panel {
+    animation: none;
+  }
+}
