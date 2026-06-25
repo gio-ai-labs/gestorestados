@@ -1,0 +1,10 @@
+:host {
+  display: block;
+}
+
+/* Separación de la barra de paginación respecto a la rejilla de proyectos. */
+.proyectos-paginacion {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(241 245 249); /* slate-100 */
+}

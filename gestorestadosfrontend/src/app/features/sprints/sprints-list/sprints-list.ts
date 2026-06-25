@@ -27,6 +27,7 @@ import {
   EstadoChip,
   FormField,
   Modal,
+  Paginacion,
   Spinner,
   ToastService,
 } from '../../../shared/ui';
@@ -51,6 +52,7 @@ function rangoFechas(group: AbstractControl): ValidationErrors | null {
     Spinner,
     Modal,
     FormField,
+    Paginacion,
   ],
   templateUrl: './sprints-list.html',
   styleUrl: './sprints-list.css',
@@ -92,6 +94,9 @@ export class SprintsList {
   /** Estado abierto/cerrado del dropdown de proyecto (selector propio, no <select> nativo). */
   protected readonly selectorAbierto = signal(false);
 
+  /** Filtro por estado del sprint. `null` = todos los estados. */
+  protected readonly filtroEstado = signal<Estado | null>(null);
+
   protected readonly modalAbierto = signal(false);
   protected readonly editando = signal<Sprint | null>(null);
   protected readonly guardando = signal(false);
@@ -126,11 +131,13 @@ export class SprintsList {
         idRuta !== null && proyectos.some((p) => p.id === idRuta) ? idRuta : null;
       this.proyectoSeleccionadoId.set(preseleccionado ?? proyectos[0]?.id ?? null);
     });
-    // Al cambiar el proyecto activo: recarga sprints y actualiza encabezado/breadcrumb.
+    // Al cambiar el proyecto activo o el filtro de estado: recarga sprints desde
+    // la primera página y actualiza encabezado/breadcrumb.
     effect(() => {
       const id = this.proyectoSeleccionadoId();
+      const estado = this.filtroEstado();
       if (id === null) return;
-      void this.service.cargar(id);
+      void this.service.cargar(id, 0, estado);
       this.actualizarEncabezado();
     });
   }
@@ -165,6 +172,18 @@ export class SprintsList {
     this.cerrarSelector();
     if (id === this.proyectoSeleccionadoId()) return;
     this.proyectoSeleccionadoId.set(id);
+  }
+
+  /** Cambia el filtro de estado; el effect recarga desde la primera página. */
+  protected filtrarPorEstado(estado: Estado | null): void {
+    if (estado === this.filtroEstado()) return;
+    this.filtroEstado.set(estado);
+  }
+
+  protected irAPagina(page: number): void {
+    const pid = this.pid();
+    if (pid === null) return;
+    void this.service.cargar(pid, page, this.filtroEstado());
   }
 
   protected abrirNuevo(): void {
@@ -221,7 +240,8 @@ export class SprintsList {
         this.toast.exito('Sprint creado');
       }
       this.modalAbierto.set(false);
-      await this.service.cargar(pid);
+      // Tras crear vamos a la primera página; al editar conservamos la actual.
+      await this.service.cargar(pid, editando ? this.service.pagina() : 0, this.filtroEstado());
     } catch (err) {
       const campos = erroresDeCampo(err);
       if (campos?.['nombre']) {
@@ -248,7 +268,14 @@ export class SprintsList {
     try {
       await this.service.eliminar(s.id);
       this.toast.exito('Sprint eliminado');
-      await this.service.cargar(pid);
+      // Si era el último de la página actual, retrocede una para no quedar vacía.
+      const paginaActual = this.service.pagina();
+      const ultimoDeLaPagina = this.service.sprints().length === 1;
+      await this.service.cargar(
+        pid,
+        ultimoDeLaPagina && paginaActual > 0 ? paginaActual - 1 : paginaActual,
+        this.filtroEstado(),
+      );
     } catch (err) {
       this.toast.error(mensajeDeError(err));
     }

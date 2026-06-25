@@ -58,6 +58,30 @@
 </div>
 
 <div class="p-5">
+  <!-- Filtro por estado del sprint (visible cuando hay un proyecto activo) -->
+  @if (proyectoActivo()) {
+    <div class="filtro-estado" role="group" aria-label="Filtrar sprints por estado">
+      <button
+        type="button"
+        class="filtro-estado__pill"
+        [class.filtro-estado__pill--activa]="filtroEstado() === null"
+        [attr.aria-pressed]="filtroEstado() === null"
+        (click)="filtrarPorEstado(null)">
+        Todos
+      </button>
+      @for (e of estados; track e) {
+        <button
+          type="button"
+          class="filtro-estado__pill"
+          [class.filtro-estado__pill--activa]="filtroEstado() === e"
+          [attr.aria-pressed]="filtroEstado() === e"
+          (click)="filtrarPorEstado(e)">
+          {{ estadoLabel[e] }}
+        </button>
+      }
+    </div>
+  }
+
   @if (proyectoService.proyectos().length === 0 && !proyectoService.cargando()) {
     <ui-empty-state
       titulo="Aún no hay proyectos"
@@ -65,12 +89,18 @@
   } @else if (service.cargando() || proyectoService.cargando()) {
     <ui-spinner />
   } @else if (service.sprints().length === 0) {
-    <ui-empty-state titulo="Aún no hay sprints" mensaje="Crea el primer sprint de este proyecto.">
-      <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevo()">
-        <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
-        Nuevo sprint
-      </button>
-    </ui-empty-state>
+    @if (filtroEstado() !== null) {
+      <ui-empty-state
+        titulo="Sin sprints con ese estado"
+        mensaje="Prueba con otro estado o quita el filtro para ver todos los sprints." />
+    } @else {
+      <ui-empty-state titulo="Aún no hay sprints" mensaje="Crea el primer sprint de este proyecto.">
+        <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevo()">
+          <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Nuevo sprint
+        </button>
+      </ui-empty-state>
+    }
   } @else {
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       @for (s of service.sprints(); track s.id) {
@@ -116,6 +146,17 @@
         </div>
       }
     </div>
+
+    @if (service.totalPaginas() > 1) {
+      <div class="sprints-paginacion">
+        <ui-paginacion
+          [pagina]="service.pagina()"
+          [totalPaginas]="service.totalPaginas()"
+          [totalElementos]="service.totalElementos()"
+          [tamano]="service.tamano()"
+          (paginaCambia)="irAPagina($event)" />
+      </div>
+    }
   }
 </div>
 
