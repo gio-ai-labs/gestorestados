@@ -1,0 +1,86 @@
+:host {
+  display: block;
+}
+
+/* Barra de paginación: rango de elementos a la izquierda, indicador + navegación
+   a la derecha. Familia visual de la librería: bordes slate-200, radios
+   redondeados, morado de marca reservado solo para el foco. */
+.paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.paginacion__rango {
+  font-size: 13px;
+  color: rgb(100 116 139); /* slate-500 */
+}
+
+.paginacion__rango-numeros {
+  font-weight: 600;
+  color: var(--color-ink-900, rgb(17 24 39));
+}
+
+.paginacion__controles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.paginacion__indicador {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(100 116 139); /* slate-500 */
+}
+
+.paginacion__botones {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.paginacion__nav {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgb(226 232 240); /* slate-200 */
+  border-radius: 0.625rem;
+  background-color: #ffffff;
+  color: rgb(71 85 105); /* slate-600 */
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.paginacion__nav:hover:not(:disabled) {
+  border-color: var(--color-brand-300);
+  background-color: rgb(248 250 252); /* slate-50 */
+  color: var(--color-ink-900, rgb(17 24 39));
+}
+
+.paginacion__nav:focus-visible {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+.paginacion__nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.paginacion__icono {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paginacion__nav {
+    transition: none;
+  }
+}

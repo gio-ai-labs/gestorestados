@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
 import java.time.OffsetDateTime;
@@ -24,6 +25,7 @@ import java.util.Map;
  *   <li>{@link ReglaNegocioException} &rarr; 422</li>
  *   <li>{@link ConflictoException} &rarr; 409</li>
  *   <li>{@link MethodArgumentNotValidException} (Bean Validation) &rarr; 400 con detalle por campo</li>
+ *   <li>{@link MethodArgumentTypeMismatchException} (param de query/path con tipo invalido) &rarr; 400</li>
  *   <li>Cualquier otra &rarr; 500</li>
  * </ul>
  */
@@ -57,6 +59,12 @@ public class GlobalExceptionHandler {
                 "Uno o mas campos son invalidos");
         pd.setProperty("errors", errores);
         return pd;
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTipoParametroInvalido(MethodArgumentTypeMismatchException ex, WebRequest req) {
+        return construir(HttpStatus.BAD_REQUEST, "Parametro invalido",
+                "El valor '" + ex.getValue() + "' no es valido para el parametro '" + ex.getName() + "'");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

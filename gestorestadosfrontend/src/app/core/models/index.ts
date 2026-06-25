@@ -1,4 +1,5 @@
 export * from './estado.model';
+export * from './pagina.model';
 export * from './usuario.model';
 export * from './proyecto.model';
 export * from './sprint.model';

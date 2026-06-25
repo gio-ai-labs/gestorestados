@@ -49,17 +49,45 @@
 </div>
 
 <div class="p-5">
+  <!-- Filtro por estado del workitem (pills), mismo patrón que sprints-list. -->
+  <div class="filtro-estado" role="group" aria-label="Filtrar workitems por estado">
+    <button
+      type="button"
+      class="filtro-estado__pill"
+      [class.filtro-estado__pill--activa]="filtroEstado() === null"
+      [attr.aria-pressed]="filtroEstado() === null"
+      (click)="filtrarPorEstado(null)">
+      Todos
+    </button>
+    @for (e of estados; track e) {
+      <button
+        type="button"
+        class="filtro-estado__pill"
+        [class.filtro-estado__pill--activa]="filtroEstado() === e"
+        [attr.aria-pressed]="filtroEstado() === e"
+        (click)="filtrarPorEstado(e)">
+        {{ estadoLabel[e] }}
+      </button>
+    }
+  </div>
+
   @if (cargando()) {
     <ui-spinner [alto]="360" />
   } @else if (!hayWorkitems()) {
-    <ui-empty-state
-      titulo="Este sprint no tiene workitems"
-      mensaje="Agrega workitems al sprint para empezar a planificar el trabajo en el tablero.">
-      <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevoWorkitem()">
-        <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
-        Nuevo workitem
-      </button>
-    </ui-empty-state>
+    @if (filtroEstado() !== null) {
+      <ui-empty-state
+        titulo="Sin workitems con ese estado"
+        mensaje="Prueba con otro estado o quita el filtro para ver todos los workitems." />
+    } @else {
+      <ui-empty-state
+        titulo="Este sprint no tiene workitems"
+        mensaje="Agrega workitems al sprint para empezar a planificar el trabajo en el tablero.">
+        <button empty-action uiButton variant="primary" size="sm" (click)="abrirNuevoWorkitem()">
+          <svg viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Nuevo workitem
+        </button>
+      </ui-empty-state>
+    }
   } @else {
     <div class="flex flex-col gap-4">
       <!-- Cabecera de columnas de estado (alineada con la grilla de filas) -->
@@ -224,6 +252,17 @@
         </section>
       }
     </div>
+
+    @if (totalPaginas() > 1) {
+      <div class="tablero-paginacion">
+        <ui-paginacion
+          [pagina]="pagina()"
+          [totalPaginas]="totalPaginas()"
+          [totalElementos]="totalElementos()"
+          [tamano]="tamano()"
+          (paginaCambia)="irAPagina($event)" />
+      </div>
+    }
   }
 </div>
 

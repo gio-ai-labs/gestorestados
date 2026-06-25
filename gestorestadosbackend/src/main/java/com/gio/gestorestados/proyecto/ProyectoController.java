@@ -2,7 +2,11 @@ package com.gio.gestorestados.proyecto;
 
 import com.gio.gestorestados.proyecto.dto.ProyectoRequest;
 import com.gio.gestorestados.proyecto.dto.ProyectoResponse;
+import com.gio.gestorestados.shared.dto.PaginaResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,10 +37,16 @@ public class ProyectoController {
         this.service = service;
     }
 
+    /**
+     * Listado paginado de proyectos (T26). Acepta {@code nombre} (filtro por coincidencia)
+     * y los parametros estandar de paginacion de Spring ({@code page}, {@code size}, {@code sort}).
+     * Orden por defecto estable: nombre asc. Pagina fuera de rango -&gt; pagina vacia (sin error).
+     */
     @GetMapping
-    public List<ProyectoResponse> listar(
-            @RequestParam(name = "nombre", required = false) String nombre) {
-        return service.listar(nombre);
+    public PaginaResponse<ProyectoResponse> listar(
+            @RequestParam(name = "nombre", required = false) String nombre,
+            @PageableDefault(size = 20, sort = "nombre", direction = Sort.Direction.ASC) Pageable pageable) {
+        return service.listar(nombre, pageable);
     }
 
     @GetMapping("/{id}")

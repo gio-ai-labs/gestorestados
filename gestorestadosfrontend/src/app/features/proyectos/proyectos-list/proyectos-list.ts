@@ -10,6 +10,7 @@ import {
   EmptyState,
   FormField,
   Modal,
+  Paginacion,
   Spinner,
   ToastService,
 } from '../../../shared/ui';
@@ -18,8 +19,9 @@ import { ProyectoService } from '../data-access/proyecto.service';
 @Component({
   selector: 'app-proyectos-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonDirective, EmptyState, Spinner, Modal, FormField],
+  imports: [ReactiveFormsModule, ButtonDirective, EmptyState, Spinner, Modal, FormField, Paginacion],
   templateUrl: './proyectos-list.html',
+  styleUrl: './proyectos-list.css',
 })
 export class ProyectosList implements OnInit {
   protected readonly service = inject(ProyectoService);
@@ -42,6 +44,10 @@ export class ProyectosList implements OnInit {
   ngOnInit(): void {
     this.shell.set('Proyectos', [{ label: 'Proyectos' }]);
     void this.service.cargar();
+  }
+
+  protected irAPagina(page: number): void {
+    void this.service.cargar(page);
   }
 
   protected abrirNuevo(): void {
@@ -81,7 +87,8 @@ export class ProyectosList implements OnInit {
         this.toast.exito('Proyecto creado');
       }
       this.modalAbierto.set(false);
-      await this.service.cargar();
+      // Tras crear vamos a la primera página; al editar conservamos la actual.
+      await this.service.cargar(editando ? this.service.pagina() : 0);
     } catch (err) {
       const campos = erroresDeCampo(err);
       if (campos?.['nombre']) {
@@ -106,7 +113,10 @@ export class ProyectosList implements OnInit {
     try {
       await this.service.eliminar(p.id);
       this.toast.exito('Proyecto eliminado');
-      await this.service.cargar();
+      // Si era el último de la página actual, retrocede una para no quedar vacía.
+      const paginaActual = this.service.pagina();
+      const ultimoDeLaPagina = this.service.proyectos().length === 1;
+      await this.service.cargar(ultimoDeLaPagina && paginaActual > 0 ? paginaActual - 1 : paginaActual);
     } catch (err) {
       this.toast.error(mensajeDeError(err));
     }

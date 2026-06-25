@@ -56,6 +56,17 @@
         </div>
       }
     </div>
+
+    @if (service.totalPaginas() > 1) {
+      <div class="proyectos-paginacion">
+        <ui-paginacion
+          [pagina]="service.pagina()"
+          [totalPaginas]="service.totalPaginas()"
+          [totalElementos]="service.totalElementos()"
+          [tamano]="service.tamano()"
+          (paginaCambia)="irAPagina($event)" />
+      </div>
+    }
   }
 </div>
 
