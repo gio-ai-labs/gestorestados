@@ -109,8 +109,23 @@ export class SprintsList {
   );
 
   constructor() {
-    // Resuelve el proyecto inicial: preseleccionado por ruta o primero disponible.
-    void this.inicializar();
+    // Asegura que la lista de proyectos esté cargada (reutiliza ProyectoService).
+    if (this.proyectoService.proyectos().length === 0) {
+      void this.proyectoService.cargar();
+    }
+    // Resuelve el proyecto inicial de forma reactiva: el input `proyectoId` viene
+    // de la ruta y solo está disponible DESPUÉS del constructor (component input
+    // binding), por eso se lee dentro de un effect y no en el constructor. Se
+    // siembra una sola vez, mientras no haya proyecto seleccionado todavía.
+    effect(() => {
+      if (this.proyectoSeleccionadoId() !== null) return;
+      const proyectos = this.proyectoService.proyectos();
+      if (proyectos.length === 0) return;
+      const idRuta = this.proyectoId() ? Number(this.proyectoId()) : null;
+      const preseleccionado =
+        idRuta !== null && proyectos.some((p) => p.id === idRuta) ? idRuta : null;
+      this.proyectoSeleccionadoId.set(preseleccionado ?? proyectos[0]?.id ?? null);
+    });
     // Al cambiar el proyecto activo: recarga sprints y actualiza encabezado/breadcrumb.
     effect(() => {
       const id = this.proyectoSeleccionadoId();
@@ -122,22 +137,6 @@ export class SprintsList {
 
   private pid(): number | null {
     return this.proyectoSeleccionadoId();
-  }
-
-  /**
-   * Carga la lista de proyectos (reutiliza ProyectoService) y fija el proyecto
-   * activo: el de la ruta si vino por navegación, o el primero disponible. Sin
-   * proyectos no se selecciona ninguno (la vista muestra su estado vacío).
-   */
-  private async inicializar(): Promise<void> {
-    if (this.proyectoService.proyectos().length === 0) {
-      await this.proyectoService.cargar();
-    }
-    const proyectos = this.proyectoService.proyectos();
-    const idRuta = this.proyectoId() ? Number(this.proyectoId()) : null;
-    const preseleccionado =
-      idRuta !== null && proyectos.some((p) => p.id === idRuta) ? idRuta : null;
-    this.proyectoSeleccionadoId.set(preseleccionado ?? proyectos[0]?.id ?? null);
   }
 
   /** Fija título y breadcrumb del shell según el proyecto activo. */
