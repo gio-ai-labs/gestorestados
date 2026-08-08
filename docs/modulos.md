@@ -18,9 +18,9 @@
 | workitems | Gestión de work items (sin vista propia) | ✅ | `features/workitems/data-access` — `workitem.service` reutilizado por la vista de sprint. Lista y ruta propias retiradas en PBI #9 (CRUD absorbido por `tablero-sprint`) |
 | tareas | Gestión de tareas (sin vista propia) | ✅ | `features/tareas/data-access` — `tarea.service` (CRUD, cambio de estado, historial, cycle time) reutilizado por la vista de sprint. Tablero por workitem retirado en PBI #9 |
 | usuarios | Listado y gestión de usuarios | ✅ | `features/usuarios/` (data-access + usuarios-list) · `usuarios.routes.ts` |
-| shared/ui | Librería de componentes UI | ✅ | button, card, modal, table, toast, confirm, spinner, form-field, empty-state, estado-chip, **paginacion** (`ui-paginacion`, presentacional: inputs `pagina`/`totalPaginas`/`totalElementos`/`tamano`, output `paginaCambia`) — PBI #17 |
-| core | Config, models, HTTP interceptors | ✅ | api.config, models/* (incl. `Pagina<T>` — PBI #17), error.interceptor, problem-detail.util |
-| layout | Shell de la aplicación | ✅ | app-shell, shell.service · menú lateral con ítems Proyectos / **Sprints** (PBI #11) / Usuarios (íconos por `@switch` + `routerLinkActive`) |
+| shared/ui | Librería de componentes UI | ✅ | button, card, modal, table, toast, confirm, spinner, form-field, empty-state, estado-chip, **paginacion** (`ui-paginacion`, presentacional: inputs `pagina`/`totalPaginas`/`totalElementos`/`tamano`, output `paginaCambia`) — PBI #17. **Dark mode (PBI #57):** todos los componentes tienen variantes `dark:` aplicadas; modal/toast/confirm migrados de `styles[]` a CSS externo |
+| core | Config, models, HTTP interceptors | ✅ | api.config, models/* (incl. `Pagina<T>` — PBI #17), error.interceptor, problem-detail.util. **Dark mode (PBI #57):** `theme.service.ts` — signal de tema activo, persistencia localStorage, fallback `prefers-color-scheme`, aplica/quita clase `.dark` en `<html>` |
+| layout | Shell de la aplicación | ✅ | app-shell, shell.service · menú lateral con ítems Proyectos / **Sprints** (PBI #11) / Usuarios (íconos por `@switch` + `routerLinkActive`). **Dark mode (PBI #57):** botón toggle sol/luna en topbar (junto al avatar), sidebar/topbar/main card con clases `dark:`; nav activo usa `.nav-link-active` (light: ink-900, dark: brand-600) |
 
 ## Backend
 

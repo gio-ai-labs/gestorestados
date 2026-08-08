@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ShellService } from '../shell.service';
+import { ThemeService } from '../../core/theme.service';
 import { ToastHost } from '../../shared/ui/toast/toast-host';
 import { ConfirmHost } from '../../shared/ui/confirm/confirm-host';
 
@@ -23,6 +24,7 @@ interface NavItem {
 })
 export class AppShell {
   protected readonly shell = inject(ShellService);
+  protected readonly themeService = inject(ThemeService);
 
   protected readonly nav = signal<NavItem[]>([
     { label: 'Proyectos', link: '/proyectos', icon: 'proyectos' },

@@ -1,0 +1,15 @@
+.ui-backdrop {
+  animation: ui-fade 0.16s ease-out;
+}
+
+.ui-panel {
+  animation: ui-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ui-fade {
+  from { opacity: 0; }
+}
+
+@keyframes ui-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}

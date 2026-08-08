@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="grid place-items-center" [style.min-height.px]="alto()">
-      <span class="inline-block size-7 animate-spin rounded-full border-[3px] border-slate-200 border-t-brand-600"></span>
+      <span class="inline-block size-7 animate-spin rounded-full border-[3px] border-slate-200 border-t-brand-600 dark:border-dark-border dark:border-t-brand-400"></span>
     </div>
   `,
 })

@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   selector: 'ui-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="ui-table overflow-x-auto rounded-xl border border-slate-200/80">
+    <div class="ui-table overflow-x-auto rounded-xl border border-slate-200/80 dark:border-dark-border">
       <table class="w-full border-collapse text-left text-[14px]">
         <ng-content />
       </table>

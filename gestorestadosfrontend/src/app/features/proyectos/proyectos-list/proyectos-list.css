@@ -8,3 +8,7 @@
   padding-top: 1rem;
   border-top: 1px solid rgb(241 245 249); /* slate-100 */
 }
+
+:host-context(.dark) .proyectos-paginacion {
+  border-top-color: var(--color-dark-border);
+}

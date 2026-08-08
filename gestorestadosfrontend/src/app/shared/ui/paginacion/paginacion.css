@@ -84,3 +84,35 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   Dark mode
+   ============================================================ */
+:host-context(.dark) .paginacion__rango {
+  color: var(--color-slate-400);
+}
+
+:host-context(.dark) .paginacion__rango-numeros {
+  color: var(--color-slate-200);
+}
+
+:host-context(.dark) .paginacion__indicador {
+  color: var(--color-slate-400);
+}
+
+:host-context(.dark) .paginacion__nav {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-slate-400);
+}
+
+:host-context(.dark) .paginacion__nav:hover:not(:disabled) {
+  border-color: var(--color-brand-500);
+  background-color: color-mix(in oklab, var(--color-dark-sidebar) 80%, transparent);
+  color: var(--color-slate-100);
+}
+
+:host-context(.dark) .paginacion__nav:focus-visible {
+  border-color: var(--color-brand-400);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand-500) 20%, transparent);
+}

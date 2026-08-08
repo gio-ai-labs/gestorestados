@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode: activado por clase .dark en <html> (gestionado por ThemeService) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* =============================================================================
    Design tokens — Gestor de Estados
    Minimalismo refinado: neutros slate + acento indigo profundo, cards blancas.
@@ -29,6 +32,12 @@
   --color-estado-pendiente: #64748b;   /* slate-500 */
   --color-estado-proceso: #4f46e5;     /* brand-600 */
   --color-estado-completado: #0d9488;  /* teal-600 */
+
+  /* Superficies dark mode — tonos azul-violeta que extienden la identidad brand */
+  --color-dark-base:    #0f111a;  /* Fondo raiz / body */
+  --color-dark-sidebar: #14172a;  /* Superficie del sidebar */
+  --color-dark-card:    #1a1d30;  /* Card de contenido principal */
+  --color-dark-border:  #252840;  /* Bordes y divisores */
 }
 
 /* =============================================================================
@@ -44,6 +53,11 @@ body {
   background: theme(--color-slate-100);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+.dark body {
+  background: var(--color-dark-base);
+  color: theme(--color-slate-200);
 }
 
 h1, h2, h3, h4, .font-display {
@@ -124,4 +138,53 @@ h1, h2, h3, h4, .font-display {
 }
 *::-webkit-scrollbar-thumb:hover {
   background: theme(--color-slate-400);
+}
+
+.dark * {
+  scrollbar-color: var(--color-dark-border) transparent;
+}
+.dark *::-webkit-scrollbar-thumb {
+  background: var(--color-dark-border);
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--color-dark-border) 140%, white);
+}
+
+/* =============================================================================
+   Dark mode: controles de formulario (.ui-input)
+   ========================================================================== */
+.dark .ui-input {
+  background: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: theme(--color-slate-100);
+}
+.dark .ui-input::placeholder {
+  color: theme(--color-slate-500);
+}
+.dark .ui-input:focus {
+  border-color: var(--color-brand-400);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand-500) 20%, transparent);
+}
+.dark .ui-input:disabled {
+  background: var(--color-dark-sidebar);
+  color: theme(--color-slate-600);
+}
+.dark .ui-input.ng-invalid.ng-touched {
+  border-color: theme(--color-rose-500);
+}
+
+/* =============================================================================
+   Dark mode: tabla (.ui-table)
+   ========================================================================== */
+.dark .ui-table thead th {
+  background: var(--color-dark-sidebar);
+  border-bottom-color: var(--color-dark-border);
+  color: theme(--color-slate-500);
+}
+.dark .ui-table tbody td {
+  border-bottom-color: var(--color-dark-border);
+  color: theme(--color-slate-300);
+}
+.dark .ui-table tbody tr:hover {
+  background: color-mix(in oklab, var(--color-dark-sidebar) 60%, transparent);
 }
