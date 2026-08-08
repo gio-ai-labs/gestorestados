@@ -467,3 +467,88 @@
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Dark mode                                                            */
+/* ------------------------------------------------------------------ */
+
+:host-context(.dark) .tablero-grid.sticky {
+  background-color: var(--color-dark-base);
+}
+
+:host-context(.dark) .tablero-col {
+  background-color: var(--color-dark-sidebar);
+}
+
+:host-context(.dark) .tablero-wi {
+  border-color: var(--color-dark-border);
+}
+
+:host-context(.dark) .tablero-col.cdk-drop-list-receiving,
+:host-context(.dark) .tablero-col.cdk-drop-list-dragging {
+  background-color: var(--color-dark-card);
+  outline-color: var(--color-brand-500);
+}
+
+/* Sprint selector */
+:host-context(.dark) .sprint-selector__control {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-slate-100);
+}
+
+:host-context(.dark) .sprint-selector__control:hover {
+  border-color: var(--color-brand-400);
+}
+
+:host-context(.dark) .sprint-selector__valor {
+  color: var(--color-slate-100);
+}
+
+:host-context(.dark) .sprint-selector__panel {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  box-shadow:
+    0 12px 28px -10px rgb(0 0 0 / 0.5),
+    0 6px 12px -8px rgb(0 0 0 / 0.3);
+}
+
+:host-context(.dark) .sprint-selector__opcion {
+  color: var(--color-slate-200);
+}
+
+:host-context(.dark) .sprint-selector__opcion:hover,
+:host-context(.dark) .sprint-selector__opcion:focus-visible {
+  background-color: var(--color-dark-sidebar);
+}
+
+:host-context(.dark) .sprint-selector__opcion--activa {
+  color: var(--color-brand-400);
+  background-color: rgb(124 58 237 / 0.15);
+}
+
+:host-context(.dark) .sprint-selector__opcion--activa:hover {
+  background-color: rgb(124 58 237 / 0.2);
+}
+
+/* Filter pills */
+:host-context(.dark) .filtro-estado__pill {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-slate-400);
+}
+
+:host-context(.dark) .filtro-estado__pill:hover:not(.filtro-estado__pill--activa) {
+  border-color: var(--color-brand-400);
+  color: var(--color-slate-200);
+}
+
+:host-context(.dark) .filtro-estado__pill--activa {
+  background-color: rgb(124 58 237 / 0.15);
+  color: var(--color-brand-400);
+}
+
+/* Pagination separator */
+:host-context(.dark) .tablero-paginacion {
+  border-top-color: var(--color-dark-border);
+}
