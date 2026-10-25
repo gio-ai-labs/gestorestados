@@ -4,7 +4,10 @@ import com.gio.gestorestados.proyecto.dto.ProyectoRequest;
 import com.gio.gestorestados.proyecto.dto.ProyectoResponse;
 import com.gio.gestorestados.proyecto.entity.Proyecto;
 import com.gio.gestorestados.proyecto.mapper.ProyectoMapper;
+import com.gio.gestorestados.shared.dto.PaginaResponse;
 import com.gio.gestorestados.shared.exception.RecursoNoEncontradoException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,19 @@ public class ProyectoService {
                 ? repository.findAllByOrderByNombreAsc()
                 : repository.findAllByNombreContainingIgnoreCaseOrderByNombreAsc(nombre.trim());
         return proyectos.stream().map(mapper::toResponse).toList();
+    }
+
+    /**
+     * Listado paginado server-side (T26). Conserva el filtro por nombre (coincidencia,
+     * ignore case). El orden por defecto (nombre asc) lo aporta el {@link Pageable}
+     * desde el controller.
+     */
+    @Transactional(readOnly = true)
+    public PaginaResponse<ProyectoResponse> listar(String nombre, Pageable pageable) {
+        Page<Proyecto> pagina = (nombre == null || nombre.isBlank())
+                ? repository.findAll(pageable)
+                : repository.findAllByNombreContainingIgnoreCase(nombre.trim(), pageable);
+        return PaginaResponse.de(pagina.map(mapper::toResponse));
     }
 
     @Transactional(readOnly = true)

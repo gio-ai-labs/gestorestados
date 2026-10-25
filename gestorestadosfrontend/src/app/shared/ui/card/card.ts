@@ -12,10 +12,10 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       <div class="flex items-start justify-between gap-4 px-5 pt-5">
         <div>
           @if (titulo()) {
-            <h3 class="font-display text-[15px] font-bold text-ink-900">{{ titulo() }}</h3>
+            <h3 class="font-display text-[15px] font-bold text-ink-900 dark:text-slate-100">{{ titulo() }}</h3>
           }
           @if (subtitulo()) {
-            <p class="mt-0.5 text-[13px] text-slate-500">{{ subtitulo() }}</p>
+            <p class="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">{{ subtitulo() }}</p>
           }
         </div>
         <ng-content select="[card-actions]" />
@@ -26,7 +26,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     </div>
   `,
   host: {
-    class: 'block rounded-xl border border-slate-200/80 bg-white',
+    class: 'block rounded-xl border border-slate-200/80 bg-white dark:border-dark-border dark:bg-dark-card',
   },
 })
 export class Card {

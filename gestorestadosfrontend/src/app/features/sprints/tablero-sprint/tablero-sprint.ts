@@ -13,6 +13,7 @@ import {
   input,
   numberAttribute,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -37,6 +38,7 @@ import {
   EstadoChip,
   FormField,
   Modal,
+  Paginacion,
   Spinner,
   ToastService,
 } from '../../../shared/ui';
@@ -77,6 +79,7 @@ interface FilaWorkitem {
     Modal,
     FormField,
     ButtonDirective,
+    Paginacion,
   ],
   templateUrl: './tablero-sprint.html',
   styleUrl: './tablero-sprint.css',
@@ -134,6 +137,28 @@ export class TableroSprint {
 
   protected readonly hayWorkitems = computed(() => this.filas().length > 0);
 
+  /** Filtro por estado del WORKITEM. `null` = todos los estados. */
+  protected readonly filtroEstado = signal<Estado | null>(null);
+
+  /** Metadatos de la página actual del tablero (paginación a nivel de workitem). */
+  protected readonly pagina = signal(0);
+  protected readonly totalPaginas = signal(0);
+  protected readonly totalElementos = signal(0);
+  protected readonly tamano = signal(20);
+
+  /**
+   * Ids de los workitems cuya sección está colapsada (sólo en memoria).
+   * Se recalcula en cada `cargar`: COMPLETADO arranca colapsado;
+   * PENDIENTE / EN_PROCESO arrancan expandidos.
+   */
+  protected readonly colapsados = signal<ReadonlySet<number>>(new Set());
+
+  /**
+   * Marca puesta por CDK al iniciar un arrastre de tarea: evita que el `(click)`
+   * que sigue al soltar abra el modal de edición. Se limpia tras el ciclo de drag.
+   */
+  private arrastrando = false;
+
   // Modal CRUD de workitem
   protected readonly modalWorkitem = signal(false);
   protected readonly workitemEditando = signal<WorkItem | null>(null);
@@ -171,9 +196,14 @@ export class TableroSprint {
   constructor() {
     void this.usuarioService.listar(true).then((u) => this.usuariosActivos.set(u));
     // Recarga el tablero cuando cambia el sprintId (input reactivo).
+    // Al cambiar de sprint se vuelve a la primera página y se limpia el filtro.
     effect(() => {
       const id = this.sprintId();
-      void this.cargar(id);
+      untracked(() => {
+        this.filtroEstado.set(null);
+        this.pagina.set(0);
+        void this.cargar(id, 0, null);
+      });
     });
     // Carga los sprints del proyecto (selector) y fija título/breadcrumb del shell.
     effect(() => {
@@ -226,21 +256,57 @@ export class TableroSprint {
     this.cambiarSprint(sprintId);
   }
 
-  private async cargar(sprintId: number): Promise<void> {
+  /**
+   * Carga una página del tablero (a nivel de workitem) aplicando el filtro de
+   * estado vigente. Persiste los metadatos de paginación para la barra inferior.
+   */
+  private async cargar(
+    sprintId: number,
+    page = this.pagina(),
+    estado: Estado | null = this.filtroEstado(),
+  ): Promise<void> {
     this.cargando.set(true);
     try {
-      const items = await this.obtenerTablero(sprintId);
-      this.filas.set(items.map((item) => this.aFila(item)));
+      const respuesta = await firstValueFrom(
+        this.sprintService.obtenerTablero(sprintId, page, estado),
+      );
+      // Lo más reciente primero: orden estable por id de workitem descendente.
+      const ordenados = [...respuesta.content].sort((a, b) => b.workitem.id - a.workitem.id);
+      this.filas.set(ordenados.map((item) => this.aFila(item)));
+      this.pagina.set(respuesta.page);
+      this.totalPaginas.set(respuesta.totalPages);
+      this.totalElementos.set(respuesta.totalElements);
+      this.tamano.set(respuesta.size);
+      // Estado inicial de colapso por estado del workitem: COMPLETADO cerrado,
+      // PENDIENTE / EN_PROCESO abierto. Se re-aplica en cada recarga del tablero.
+      this.colapsados.set(
+        new Set(
+          ordenados
+            .filter((item) => item.workitem.estado === 'COMPLETADO')
+            .map((item) => item.workitem.id),
+        ),
+      );
     } catch (err) {
       this.toast.error('No se pudo cargar el tablero del sprint. ' + mensajeDeError(err));
       this.filas.set([]);
+      this.colapsados.set(new Set());
     } finally {
       this.cargando.set(false);
     }
   }
 
-  private obtenerTablero(sprintId: number): Promise<SprintTableroItem[]> {
-    return firstValueFrom(this.sprintService.obtenerTablero(sprintId));
+  /** Cambia el filtro por estado del workitem y recarga desde la primera página. */
+  protected filtrarPorEstado(estado: Estado | null): void {
+    if (estado === this.filtroEstado()) return;
+    this.filtroEstado.set(estado);
+    this.pagina.set(0);
+    void this.cargar(this.sprintId(), 0, estado);
+  }
+
+  /** Navega a una página del tablero conservando el filtro de estado vigente. */
+  protected irAPagina(page: number): void {
+    if (page === this.pagina()) return;
+    void this.cargar(this.sprintId(), page, this.filtroEstado());
   }
 
   /** Agrupa las tareas del workitem por estado, respetando el orden del backend. */
@@ -267,6 +333,49 @@ export class TableroSprint {
 
   protected totalTareas(fila: FilaWorkitem): number {
     return fila.tareas.PENDIENTE.length + fila.tareas.EN_PROCESO.length + fila.tareas.COMPLETADO.length;
+  }
+
+  /** ¿La sección de este workitem está colapsada? */
+  protected estaColapsado(workitemId: number): boolean {
+    return this.colapsados().has(workitemId);
+  }
+
+  /**
+   * Alterna el colapso de la sección de un workitem (sólo en memoria).
+   * El control hace stopPropagation, por lo que no abre la edición del workitem.
+   */
+  protected alternarColapso(workitemId: number, ev: Event): void {
+    ev.stopPropagation();
+    this.colapsados.update((actual) => {
+      const siguiente = new Set(actual);
+      if (siguiente.has(workitemId)) {
+        siguiente.delete(workitemId);
+      } else {
+        siguiente.add(workitemId);
+      }
+      return siguiente;
+    });
+  }
+
+  /**
+   * Clic sobre la card de la tarea: abre su edición salvo que el gesto haya sido
+   * un arrastre (en cuyo caso `arrastrando` está activo y se ignora el clic).
+   */
+  protected clicTarea(t: Tarea, ev: Event): void {
+    if (this.arrastrando) return;
+    this.abrirEditarTarea(t, ev);
+  }
+
+  /** CDK inicia un arrastre: marca para suprimir el `(click)` posterior. */
+  protected onArrastreIniciado(): void {
+    this.arrastrando = true;
+  }
+
+  /** CDK termina el arrastre: limpia la marca tras el ciclo de eventos. */
+  protected onArrastreTerminado(): void {
+    // El `(click)` sintético se dispara inmediatamente después del drop;
+    // se difiere la limpieza para que `clicTarea` lo vea aún activo.
+    setTimeout(() => (this.arrastrando = false));
   }
 
   /**
@@ -341,7 +450,8 @@ export class TableroSprint {
     this.modalWorkitem.set(true);
   }
 
-  protected abrirEditarWorkitem(w: SprintTableroItem['workitem']): void {
+  protected abrirEditarWorkitem(w: SprintTableroItem['workitem'], ev?: Event): void {
+    ev?.stopPropagation();
     this.workitemEditando.set(w);
     this.errorNombreWorkitem.set(null);
     this.formWorkitem.reset({
@@ -379,7 +489,12 @@ export class TableroSprint {
         this.toast.exito('WorkItem creado');
       }
       this.modalWorkitem.set(false);
-      await this.cargar(this.sprintId());
+      // Al editar conservamos la página actual; tras crear vamos a la primera,
+      // donde aparece el workitem nuevo (orden por id descendente).
+      if (!editando) {
+        this.pagina.set(0);
+      }
+      await this.cargar(this.sprintId(), this.pagina(), this.filtroEstado());
     } catch (err) {
       const campos = erroresDeCampo(err);
       if (campos?.['nombre']) {
@@ -392,7 +507,8 @@ export class TableroSprint {
     }
   }
 
-  protected async eliminarWorkitem(w: SprintTableroItem['workitem']): Promise<void> {
+  protected async eliminarWorkitem(w: SprintTableroItem['workitem'], ev?: Event): Promise<void> {
+    ev?.stopPropagation();
     const ok = await this.confirmService.ask({
       titulo: '¿Eliminar workitem?',
       mensaje: `Se eliminará "${w.nombre}" junto con sus tareas. Esta acción no se puede deshacer.`,
@@ -403,7 +519,15 @@ export class TableroSprint {
     try {
       await this.workitemService.eliminar(w.id);
       this.toast.exito('WorkItem eliminado');
-      await this.cargar(this.sprintId());
+      // Si era el último workitem de la página actual, retrocede una para no
+      // quedar en una página vacía; en otro caso conserva la página vigente.
+      const paginaActual = this.pagina();
+      const ultimoDeLaPagina = this.filas().length === 1;
+      await this.cargar(
+        this.sprintId(),
+        ultimoDeLaPagina && paginaActual > 0 ? paginaActual - 1 : paginaActual,
+        this.filtroEstado(),
+      );
     } catch (err) {
       this.toast.error(mensajeDeError(err));
     }
@@ -411,7 +535,8 @@ export class TableroSprint {
 
   // --- CRUD de Tarea (reutiliza TareaService) ---
 
-  protected abrirNuevaTarea(workitemId: number): void {
+  protected abrirNuevaTarea(workitemId: number, ev?: Event): void {
+    ev?.stopPropagation();
     this.tareaEditando.set(null);
     this.tareaWorkitemId.set(workitemId);
     this.errorNombreTarea.set(null);

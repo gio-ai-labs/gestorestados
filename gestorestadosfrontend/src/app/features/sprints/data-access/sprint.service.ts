@@ -1,8 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
-import { Estado, Sprint, SprintRequest, SprintTableroItem } from '../../../core/models';
+import { Estado, Pagina, Sprint, SprintRequest, SprintTableroItem } from '../../../core/models';
+
+/** Tamaño de página por defecto (coincide con el default del backend). */
+const TAMANO_PAGINA = 20;
 
 /** Acceso a datos de Sprints (anidados bajo proyecto). */
 @Injectable({ providedIn: 'root' })
@@ -10,13 +13,35 @@ export class SprintService {
   private readonly http = inject(HttpClient);
   private readonly base = API_BASE_URL;
 
+  /** Contenido de la página actual (lista visible). */
   readonly sprints = signal<Sprint[]>([]);
   readonly cargando = signal(false);
 
-  async cargar(proyectoId: number): Promise<void> {
+  /** Metadatos de la página actual. */
+  readonly pagina = signal(0);
+  readonly totalPaginas = signal(0);
+  readonly totalElementos = signal(0);
+  readonly tamano = signal(TAMANO_PAGINA);
+
+  /**
+   * Carga una página de sprints de un proyecto. `estado` filtra por estado de
+   * sprint (opcional); `page` es base 0. Actualiza el contenido y los metadatos.
+   */
+  async cargar(proyectoId: number, page = 0, estado: Estado | null = null): Promise<void> {
     this.cargando.set(true);
     try {
-      this.sprints.set(await firstValueFrom(this.listarPorProyecto(proyectoId)));
+      let params = new HttpParams().set('page', page).set('size', this.tamano());
+      if (estado) {
+        params = params.set('estado', estado);
+      }
+      const respuesta = await firstValueFrom(
+        this.http.get<Pagina<Sprint>>(`${this.base}/proyectos/${proyectoId}/sprints`, { params }),
+      );
+      this.sprints.set(respuesta.content);
+      this.pagina.set(respuesta.page);
+      this.totalPaginas.set(respuesta.totalPages);
+      this.totalElementos.set(respuesta.totalElements);
+      this.tamano.set(respuesta.size);
     } finally {
       this.cargando.set(false);
     }
@@ -26,9 +51,15 @@ export class SprintService {
    * Lista los sprints de un proyecto sin tocar el signal compartido `sprints`.
    * Útil para consumidores que necesitan la lista de forma puntual (p. ej. el
    * selector de sprint del tablero) sin acoplarse al estado de `sprints-list`.
+   *
+   * Devuelve solo el contenido de la primera página del endpoint paginado: el
+   * selector del tablero conserva su firma `Observable<Sprint[]>`.
    */
   listarPorProyecto(proyectoId: number): Observable<Sprint[]> {
-    return this.http.get<Sprint[]>(`${this.base}/proyectos/${proyectoId}/sprints`);
+    const params = new HttpParams().set('page', 0).set('size', 1000);
+    return this.http
+      .get<Pagina<Sprint>>(`${this.base}/proyectos/${proyectoId}/sprints`, { params })
+      .pipe(map((respuesta) => respuesta.content));
   }
 
   obtener(id: number): Promise<Sprint> {
@@ -52,11 +83,23 @@ export class SprintService {
   }
 
   /**
-   * Tablero del sprint: workitems con sus tareas (endpoint compuesto).
-   * Las tareas vienen ordenadas por estado/orden/id desde el backend.
-   * Sprint sin workitems -> []. Sprint inexistente -> ProblemDetail 404 (interceptor).
+   * Tablero del sprint paginado a nivel de WORKITEM: cada item trae el workitem
+   * con TODAS sus tareas (ordenadas por estado/orden/id desde el backend).
+   * `estado` filtra por estado del WORKITEM (opcional); `page` es base 0.
+   * Las tareas dentro de cada workitem no se paginan ni se filtran.
+   * Sprint inexistente o `estado` inválido -> ProblemDetail (interceptor).
    */
-  obtenerTablero(sprintId: number): Observable<SprintTableroItem[]> {
-    return this.http.get<SprintTableroItem[]>(`${this.base}/sprints/${sprintId}/tablero`);
+  obtenerTablero(
+    sprintId: number,
+    page = 0,
+    estado: Estado | null = null,
+  ): Observable<Pagina<SprintTableroItem>> {
+    let params = new HttpParams().set('page', page).set('size', TAMANO_PAGINA);
+    if (estado) {
+      params = params.set('estado', estado);
+    }
+    return this.http.get<Pagina<SprintTableroItem>>(`${this.base}/sprints/${sprintId}/tablero`, {
+      params,
+    });
   }
 }

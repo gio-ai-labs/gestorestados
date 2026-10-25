@@ -1,0 +1,7 @@
+# =============================================================================
+# application-local.properties.example  (plantilla)
+# Copiar a application-local.properties y poner las credenciales reales.
+# El archivo real esta ignorado por .gitignore y se carga con el perfil 'local'.
+# =============================================================================
+spring.datasource.username=CAMBIAR_USUARIO
+spring.datasource.password=CAMBIAR_PASSWORD

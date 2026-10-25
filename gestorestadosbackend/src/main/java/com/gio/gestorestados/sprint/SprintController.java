@@ -1,10 +1,15 @@
 package com.gio.gestorestados.sprint;
 
+import com.gio.gestorestados.shared.domain.Estado;
 import com.gio.gestorestados.shared.dto.CambioEstadoRequest;
+import com.gio.gestorestados.shared.dto.PaginaResponse;
 import com.gio.gestorestados.sprint.dto.SprintRequest;
 import com.gio.gestorestados.sprint.dto.SprintResponse;
 import com.gio.gestorestados.sprint.dto.SprintTableroResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 /**
  * Endpoints REST de Sprints (§6.7). Listado/creacion bajo proyecto; resto por id de sprint.
@@ -34,10 +38,19 @@ public class SprintController {
         this.service = service;
     }
 
+    /**
+     * Listado paginado de sprints de un proyecto (T26). Acepta {@code nombre} (filtro por
+     * coincidencia), {@code estado} (filtro exacto) y los parametros estandar de paginacion
+     * de Spring ({@code page}, {@code size}, {@code sort}). Orden por defecto estable: nombre asc.
+     * Pagina fuera de rango -&gt; pagina vacia (sin error).
+     */
     @GetMapping("/api/v1/proyectos/{proyectoId}/sprints")
-    public List<SprintResponse> listar(@PathVariable Long proyectoId,
-                                      @RequestParam(name = "nombre", required = false) String nombre) {
-        return service.listarPorProyecto(proyectoId, nombre);
+    public PaginaResponse<SprintResponse> listar(
+            @PathVariable Long proyectoId,
+            @RequestParam(name = "nombre", required = false) String nombre,
+            @RequestParam(name = "estado", required = false) Estado estado,
+            @PageableDefault(size = 20, sort = "nombre", direction = Sort.Direction.ASC) Pageable pageable) {
+        return service.listarPorProyecto(proyectoId, nombre, estado, pageable);
     }
 
     @GetMapping("/api/v1/sprints/{id}")
@@ -45,10 +58,19 @@ public class SprintController {
         return service.obtener(id);
     }
 
-    /** Tablero del sprint: sus workitems, cada uno con su lista de tareas (T13). */
+    /**
+     * Tablero del sprint paginado a nivel de workitem (T27): cada workitem de la pagina trae
+     * TODAS sus tareas (las tareas no se paginan). Acepta filtro opcional por {@code estado}
+     * del workitem (literal exacto de {@link Estado}) y los parametros estandar de paginacion
+     * de Spring ({@code page}, {@code size}, {@code sort}); orden por defecto estable: nombre asc,
+     * consistente con el tablero original (T13). Pagina fuera de rango -&gt; pagina vacia (sin error).
+     */
     @GetMapping("/api/v1/sprints/{sprintId}/tablero")
-    public List<SprintTableroResponse> tablero(@PathVariable Long sprintId) {
-        return service.obtenerTablero(sprintId);
+    public PaginaResponse<SprintTableroResponse> tablero(
+            @PathVariable Long sprintId,
+            @RequestParam(name = "estado", required = false) Estado estado,
+            @PageableDefault(size = 20, sort = "nombre", direction = Sort.Direction.ASC) Pageable pageable) {
+        return service.obtenerTablero(sprintId, estado, pageable);
     }
 
     @PostMapping("/api/v1/proyectos/{proyectoId}/sprints")

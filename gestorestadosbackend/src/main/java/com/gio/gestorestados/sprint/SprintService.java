@@ -3,6 +3,7 @@ package com.gio.gestorestados.sprint;
 import com.gio.gestorestados.proyecto.ProyectoRepository;
 import com.gio.gestorestados.proyecto.entity.Proyecto;
 import com.gio.gestorestados.shared.domain.Estado;
+import com.gio.gestorestados.shared.dto.PaginaResponse;
 import com.gio.gestorestados.shared.exception.RecursoNoEncontradoException;
 import com.gio.gestorestados.shared.exception.ReglaNegocioException;
 import com.gio.gestorestados.sprint.dto.SprintRequest;
@@ -16,6 +17,8 @@ import com.gio.gestorestados.tarea.mapper.TareaMapper;
 import com.gio.gestorestados.workitem.WorkItemRepository;
 import com.gio.gestorestados.workitem.entity.WorkItem;
 import com.gio.gestorestados.workitem.mapper.WorkItemMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +67,20 @@ public class SprintService {
         return sprints.stream().map(mapper::toResponse).toList();
     }
 
+    /**
+     * Listado paginado server-side de sprints de un proyecto (T26). Conserva el filtro
+     * por nombre y agrega filtro por {@code estado}; ambos opcionales y combinables con
+     * la paginacion. El orden lo aporta el {@link Pageable} desde el controller.
+     */
+    @Transactional(readOnly = true)
+    public PaginaResponse<SprintResponse> listarPorProyecto(Long proyectoId, String nombre,
+                                                            Estado estado, Pageable pageable) {
+        verificarProyecto(proyectoId);
+        String nombreFiltro = (nombre == null || nombre.isBlank()) ? null : nombre.trim();
+        Page<Sprint> pagina = repository.buscarPorProyecto(proyectoId, nombreFiltro, estado, pageable);
+        return PaginaResponse.de(pagina.map(mapper::toResponse));
+    }
+
     @Transactional(readOnly = true)
     public SprintResponse obtener(Long id) {
         return mapper.toResponse(buscar(id));
@@ -78,6 +95,38 @@ public class SprintService {
     public List<SprintTableroResponse> obtenerTablero(Long sprintId) {
         buscar(sprintId);
         List<WorkItem> workitems = workItemRepository.findAllParaTableroBySprintId(sprintId);
+        return ensamblarTablero(workitems);
+    }
+
+    /**
+     * Tablero del sprint paginado a nivel de WORKITEM (T27). Cada workitem de la pagina
+     * conserva TODAS sus tareas (las tareas no se paginan). Filtro opcional por {@code estado}
+     * del workitem, combinable con la paginacion. Sin N+1: (1) se pagina la lista de workitems
+     * en BD (segun {@code pageable} y filtro); (2) las tareas de esos workitems se cargan en una
+     * unica segunda consulta {@code WHERE workitem_id IN (:ids)}. Sprint inexistente lanza
+     * {@link RecursoNoEncontradoException} (404). El orden de workitems lo aporta el
+     * {@link Pageable} (por defecto nombre asc, igual que el tablero no paginado); las tareas
+     * conservan su orden (estado, orden, id).
+     */
+    @Transactional(readOnly = true)
+    public PaginaResponse<SprintTableroResponse> obtenerTablero(Long sprintId, Estado estado,
+                                                                Pageable pageable) {
+        buscar(sprintId);
+        Page<WorkItem> pagina = workItemRepository.buscarParaTableroBySprintId(sprintId, estado, pageable);
+        List<SprintTableroResponse> contenido = ensamblarTablero(pagina.getContent());
+        return new PaginaResponse<>(
+                contenido,
+                pagina.getTotalElements(),
+                pagina.getTotalPages(),
+                pagina.getNumber(),
+                pagina.getSize());
+    }
+
+    /**
+     * Ensambla la vista de tablero para un conjunto de workitems ya resuelto, cargando sus
+     * tareas en una sola consulta (sin N+1) y preservando el orden recibido de los workitems.
+     */
+    private List<SprintTableroResponse> ensamblarTablero(List<WorkItem> workitems) {
         if (workitems.isEmpty()) {
             return List.of();
         }

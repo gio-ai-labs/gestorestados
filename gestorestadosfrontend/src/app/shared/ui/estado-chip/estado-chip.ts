@@ -22,22 +22,22 @@ export class EstadoChip {
   protected readonly clases = computed(() => {
     switch (this.estado()) {
       case 'EN_PROCESO':
-        return 'bg-brand-50 text-brand-700 ring-brand-200';
+        return 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-900/30 dark:text-brand-300 dark:ring-brand-700/50';
       case 'COMPLETADO':
-        return 'bg-teal-50 text-teal-700 ring-teal-200';
+        return 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-700/50';
       default:
-        return 'bg-slate-100 text-slate-600 ring-slate-200';
+        return 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700';
     }
   });
 
   protected readonly dot = computed(() => {
     switch (this.estado()) {
       case 'EN_PROCESO':
-        return 'bg-brand-500';
+        return 'bg-brand-500 dark:bg-brand-400';
       case 'COMPLETADO':
-        return 'bg-teal-500';
+        return 'bg-teal-500 dark:bg-teal-400';
       default:
-        return 'bg-slate-400';
+        return 'bg-slate-400 dark:bg-slate-500';
     }
   });
 }

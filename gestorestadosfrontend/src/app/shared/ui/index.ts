@@ -6,6 +6,7 @@ export * from './spinner/spinner';
 export * from './modal/modal';
 export * from './form-field/form-field';
 export * from './table/table';
+export * from './paginacion/paginacion';
 export * from './toast/toast.service';
 export * from './toast/toast-host';
 export * from './confirm/confirm.service';

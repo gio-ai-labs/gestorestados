@@ -22,6 +22,18 @@
   padding: 0.75rem;
 }
 
+/* Sección colapsada: sólo queda la card del workitem, así que la fila deja de
+   reservar las 3 columnas de estado y la card fluye a ancho completo. */
+.tablero-fila.tablero-fila--colapsada {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .tablero-fila.tablero-fila--colapsada {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* La cabecera de columnas comparte la grilla pero sin padding de fila. */
 .tablero-grid.sticky {
   padding-left: 0.75rem;
@@ -36,10 +48,20 @@
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
-/* Cada columna de estado se diferencia con un fondo muy sutil. */
+/* Cada columna de estado se diferencia con un fondo muy sutil.
+   Las cards fluyen en grilla: 1 por fila en móvil, 2 por fila en lg+ para
+   aprovechar el ancho de columna. El gutter (gap-2) lo aporta la utilidad
+   de Tailwind en el contenedor, igual en ambos ejes. */
 .tablero-col {
+  grid-template-columns: minmax(0, 1fr);
   background-color: rgb(255 255 255 / 0.5);
   transition: background-color 0.15s ease;
+}
+
+@media (min-width: 1024px) {
+  .tablero-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* El empty-state de workitem sin tareas ocupa todo el ancho de las 3 columnas. */
@@ -131,6 +153,62 @@
   .tablero-card-acciones,
   .tablero-nueva-tarea {
     opacity: 1;
+  }
+}
+
+/* --- Card clicable (abre edicion) ---
+   La card entera responde al clic. Una elevacion sutil y un anillo de marca al
+   pasar el cursor o enfocar comunican que es interactiva, reutilizando el morado
+   reservado a foco/activo del resto del tablero. */
+.tablero-clicable {
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.tablero-wi.tablero-clicable:hover {
+  border-color: var(--color-brand-300);
+  box-shadow:
+    0 8px 18px -10px rgb(30 27 52 / 0.18),
+    0 2px 6px -3px rgb(30 27 52 / 0.1);
+}
+
+.tablero-card.tablero-clicable:hover {
+  border-color: var(--color-brand-300);
+  box-shadow:
+    0 6px 14px -8px rgb(30 27 52 / 0.2),
+    0 2px 5px -3px rgb(30 27 52 / 0.12);
+}
+
+/* Foco accesible: el mismo halo morado del selector de sprint. */
+.tablero-clicable:focus-visible {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+/* --- Control de colapso de la seccion del workitem ---
+   Chevron que apunta a la derecha cuando esta colapsada y rota a apuntar abajo
+   al expandir, replicando el gesto del chevron del selector de sprint. */
+.tablero-colapso:focus-visible {
+  outline: none;
+  color: var(--color-brand-600, rgb(124 58 237));
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+.tablero-colapso-chevron {
+  transition: transform 0.18s ease;
+}
+
+.tablero-colapso-chevron--abierto {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tablero-clicable,
+  .tablero-colapso-chevron {
+    transition: none;
   }
 }
 
@@ -328,4 +406,149 @@
   .sprint-selector__panel {
     animation: none;
   }
+}
+
+/* --- Filtro por estado del workitem (pills segmentadas) ---
+   Mismo lenguaje visual que el filtro de sprints-list: pills neutrales con la
+   activa en morado de marca suave. El verde/teal queda reservado al estado
+   COMPLETADO de los chips, no a las pills. */
+.filtro-estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+}
+
+.filtro-estado__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid rgb(226 232 240); /* slate-200 */
+  border-radius: 9999px;
+  background-color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(71 85 105); /* slate-600 */
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.filtro-estado__pill:hover:not(.filtro-estado__pill--activa) {
+  border-color: var(--color-brand-300);
+  color: var(--color-ink-900, rgb(17 24 39));
+}
+
+.filtro-estado__pill:focus-visible {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 0.15);
+}
+
+.filtro-estado__pill--activa {
+  border-color: transparent;
+  background-color: rgb(124 58 237 / 0.1);
+  color: var(--color-brand-700, rgb(109 40 217));
+  font-weight: 600;
+}
+
+/* Separación de la barra de paginación respecto a la grilla de filas. */
+.tablero-paginacion {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(241 245 249); /* slate-100 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filtro-estado__pill {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Dark mode                                                            */
+/* ------------------------------------------------------------------ */
+
+:host-context(.dark) .tablero-grid.sticky {
+  background-color: var(--color-dark-base);
+}
+
+:host-context(.dark) .tablero-col {
+  background-color: var(--color-dark-sidebar);
+}
+
+:host-context(.dark) .tablero-wi {
+  border-color: var(--color-dark-border);
+}
+
+:host-context(.dark) .tablero-col.cdk-drop-list-receiving,
+:host-context(.dark) .tablero-col.cdk-drop-list-dragging {
+  background-color: var(--color-dark-card);
+  outline-color: var(--color-brand-500);
+}
+
+/* Sprint selector */
+:host-context(.dark) .sprint-selector__control {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-slate-100);
+}
+
+:host-context(.dark) .sprint-selector__control:hover {
+  border-color: var(--color-brand-400);
+}
+
+:host-context(.dark) .sprint-selector__valor {
+  color: var(--color-slate-100);
+}
+
+:host-context(.dark) .sprint-selector__panel {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  box-shadow:
+    0 12px 28px -10px rgb(0 0 0 / 0.5),
+    0 6px 12px -8px rgb(0 0 0 / 0.3);
+}
+
+:host-context(.dark) .sprint-selector__opcion {
+  color: var(--color-slate-200);
+}
+
+:host-context(.dark) .sprint-selector__opcion:hover,
+:host-context(.dark) .sprint-selector__opcion:focus-visible {
+  background-color: var(--color-dark-sidebar);
+}
+
+:host-context(.dark) .sprint-selector__opcion--activa {
+  color: var(--color-brand-400);
+  background-color: rgb(124 58 237 / 0.15);
+}
+
+:host-context(.dark) .sprint-selector__opcion--activa:hover {
+  background-color: rgb(124 58 237 / 0.2);
+}
+
+/* Filter pills */
+:host-context(.dark) .filtro-estado__pill {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-slate-400);
+}
+
+:host-context(.dark) .filtro-estado__pill:hover:not(.filtro-estado__pill--activa) {
+  border-color: var(--color-brand-400);
+  color: var(--color-slate-200);
+}
+
+:host-context(.dark) .filtro-estado__pill--activa {
+  background-color: rgb(124 58 237 / 0.15);
+  color: var(--color-brand-400);
+}
+
+/* Pagination separator */
+:host-context(.dark) .tablero-paginacion {
+  border-top-color: var(--color-dark-border);
 }
